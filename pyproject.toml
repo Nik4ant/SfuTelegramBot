@@ -1,0 +1,56 @@
+[project]
+name = "SfuTelegramBot"
+version = "0.1.0"
+description = ""
+authors = [
+    # Указываться почту не обязательно
+    {name = "Nikita", email = ""},
+    {name = "Aleksei", email = ""},
+    {name = "Kostia", email = ""},
+    {name = "Aleksandr", email = ""},
+]
+dependencies = [
+    "python-dotenv>=1.0.1",
+    "aiogram>=3.3.0",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+#region    -- Dev Tools
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "black>=24.1.1",
+    "isort>=5.13.2",
+    "mypy>=1.8.0",
+    "flake8>=7.0.0",
+    "pylint>=3.0.3",
+]
+
+[tool.black]
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+
+[tool.pdm.scripts]
+start = "pdm run python -m sfu_telegram_bot"
+format-black = "black src/ tests/"
+format-isort = "isort src tests"
+format = {composite = ["format-black", "format-isort"]}
+#lint-bandit = "bandit -r src/"
+lint-black = "black --check --diff src/ tests/"
+lint-flake8 = "flake8 src/ tests/"
+lint-isort = "isort --check --diff src tests"
+lint-mypy = "mypy src/backend tests"
+#lint-vulture = "vulture src"
+lint = {composite = ["lint-black", "lint-flake8", "lint-isort", "lint-mypy", "pylint --recursive=y ."]}
+#test = "pytest tests/"
+#endregion -- Dev Tools
