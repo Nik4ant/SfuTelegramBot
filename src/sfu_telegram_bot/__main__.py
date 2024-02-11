@@ -6,6 +6,7 @@ sys.path.extend(
     [
         os.path.abspath(f"{os.curdir}/src"),  # might be unnecessary
         os.path.abspath(f"{os.curdir}/src/sfu_telegram_bot"),
+        os.path.abspath(f"{os.curdir}/src/sfu_telegram_bot/bot"),
     ]
 )
 
