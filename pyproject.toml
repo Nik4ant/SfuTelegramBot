@@ -11,7 +11,7 @@ authors = [
 ]
 dependencies = [
     "python-dotenv>=1.0.1",
-    "aiogram>=3.3.0",
+    "aiogram==2.21",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -40,6 +40,14 @@ target-version = ["py311"]
 [tool.isort]
 profile = "black"
 
+[tool.mypy]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+python_version = "3.11"
+strict = true
+show_error_codes = true
+warn_unused_ignores = true
+
 [tool.pdm.scripts]
 start = "pdm run python -m sfu_telegram_bot"
 format-black = "black src/ tests/"
@@ -49,7 +57,7 @@ format = {composite = ["format-black", "format-isort"]}
 lint-black = "black --check --diff src/ tests/"
 lint-flake8 = "flake8 src/ tests/"
 lint-isort = "isort --check --diff src tests"
-lint-mypy = "mypy src/backend tests"
+lint-mypy = "mypy src/ tests"
 #lint-vulture = "vulture src"
 lint = {composite = ["lint-black", "lint-flake8", "lint-isort", "lint-mypy", "pylint --recursive=y ."]}
 #test = "pytest tests/"
