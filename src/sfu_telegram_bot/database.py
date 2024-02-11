@@ -27,7 +27,6 @@ async def create_profile(user_ID): # Создание профиля с чист
 
     db.commit()
 
-
 async def edit_profile(operation, user_ID, data=''): # Изменение данных у профиля
     if operation == "Очистить данные":
         cur.execute(f"UPDATE profiles SET login = NULL WHERE user_ID == '{user_ID}'")
@@ -42,6 +41,9 @@ async def edit_profile(operation, user_ID, data=''): # Изменение дан
 
     elif operation == "Добавить подгруппу":
         cur.execute(f"UPDATE profiles SET undergr = '{data}' WHERE user_ID == '{user_ID}'")
+
+    elif operation == "Set data":
+        cur.execute(f"UPDATE profiles SET last_date = '{data}' WHERE user_ID == '{user_ID}'")
     db.commit()
 
 async def find_profile(user_ID): # Ищет данные по профилю и возвращает картеж
