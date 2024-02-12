@@ -35,6 +35,17 @@ dev = [
     "pylint>=3.0.3",
 ]
 
+[tool.pylint.MASTER]
+ignore-paths = [ ".venv/*" ]
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = '''
+missing-module-docstring,
+missing-class-docstring,
+missing-function-docstring
+'''
+
+
 [tool.black]
 target-version = ["py311"]
 

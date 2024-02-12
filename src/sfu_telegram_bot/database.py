@@ -1,56 +1,90 @@
-import sqlite3 as sq
+import sqlite3 as sql
+from typing import Any
+import logging
 
 
-async def create_db(): # Создание базы данных
-    global db, cur
+# Можно переместить это в init_db, а переменные оставить тут, нооооооо не
+db: sql.Connection = sql.connect('database.db')
+cur: sql.Cursor = db.cursor()
 
-    db = sq.connect('database.db')
-    cur = db.cursor()
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS profiles(
-        user_ID TEXT PRIMARY KEY,
-        login TEXT,
-        gr TEXT,
-        undergr TEXT,
-        last_date DATEONLY
-    )""")
+def init_db() -> None:
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS profiles
+        (
+            telegram_id TEXT PRIMARY KEY,
+            login TEXT,
+            group_name TEXT,
+            sub_group_name TEXT,
+            last_change_date DATEONLY
+        )"""
+    )
     db.commit()
 
 
-async def create_profile(user_ID): # Создание профиля с чистыми данными
-    user = cur.execute(f"SELECT 1 FROM profiles WHERE user_ID == '{user_ID}'").fetchone()
-    cur.execute("UPDATE profiles SET last_date = date('now')")
+def create_empty_profile(telegram_id: str) -> None:
+    cur.execute(
+        "INSERT INTO profiles VALUES(?, NULL, NULL, NULL, date('now'))",
+        (telegram_id, )
+    )
+    db.commit()
+    logging.info(f"New user with id: {telegram_id}")
 
-    if not user:
-        cur.execute(f"INSERT INTO profiles VALUES({user_ID}, NULL, NULL, NULL, date('now'))")
-        print("NEW USER")
 
+# region    -- Edit profile
+# TODO: Что считается за вход? Добавление логина? Пока видимо да
+# TODO: logging
+# TODO: add a safe check def user_exists(id: str) -> bool
+# TODO: change filewatcher to format
+# TODO: автоматическое правило, которое будет обновлять last_change_date в SQL при UPDATE (см. триггеры и прочие штуки)
+def update_date(telegram_id: str) -> None:
+    cur.execute(
+        "UPDATE profiles SET last_change_date = date('now') WHERE telegram_id == ?",
+        (telegram_id, )
+    )
     db.commit()
 
-async def edit_profile(operation, user_ID, data=''): # Изменение данных у профиля
-    if operation == "Очистить данные":
-        cur.execute(f"UPDATE profiles SET login = NULL WHERE user_ID == '{user_ID}'")
-        cur.execute(f"UPDATE profiles SET gr = NULL WHERE user_ID == '{user_ID}'")
-        cur.execute(f"UPDATE profiles SET undergr = NULL WHERE user_ID == '{user_ID}'")
 
-    elif operation == "Добавить логин":
-        cur.execute(f"UPDATE profiles SET login = '{data}' WHERE user_ID == '{user_ID}'")
-
-    elif operation == "Добавить группу":
-        cur.execute(f"UPDATE profiles SET gr = '{data}' WHERE user_ID == '{user_ID}'")
-
-    elif operation == "Добавить подгруппу":
-        cur.execute(f"UPDATE profiles SET undergr = '{data}' WHERE user_ID == '{user_ID}'")
-
-    elif operation == "Set data":
-        cur.execute(f"UPDATE profiles SET last_date = '{data}' WHERE user_ID == '{user_ID}'")
+def clear_profile_data(telegram_id: str) -> None:
+    cur.execute("""
+        UPDATE profiles SET login = NULL, group_name = NULL, sub_group_name = NULL
+        WHERE telegram_id == ?
+    """, (telegram_id, )
+    )
     db.commit()
 
-async def find_profile(user_ID): # Ищет данные по профилю и возвращает картеж
-    cur.execute(f"SELECT * from profiles WHERE user_ID == '{user_ID}'")
+
+def add_login(telegram_id: str, login: str) -> None:
+    cur.execute(
+        "UPDATE profiles SET login = ?, last_change_date = date('now') WHERE telegram_id == ?",
+        (login, telegram_id)
+    )
+    db.commit()
+
+
+def add_group_name(telegram_id: str, group_name: str) -> None:
+    cur.execute(
+        "UPDATE profiles SET group_name = ?, last_change_date = date('now') WHERE telegram_id == ?",
+        (group_name, telegram_id)
+    )
+    db.commit()
+
+
+def add_sub_group_name(telegram_id: str, sub_group_name: str) -> None:
+    cur.execute(
+        "UPDATE profiles SET sub_group_name = ?, last_change_date = date('now') WHERE telegram_id == ?",
+        (sub_group_name, telegram_id)
+    )
+    db.commit()
+# endregion -- Edit profile
+
+
+# TODO: вместо tuple возвращать объект User, чтобы там все поля были
+def find_profile(telegram_id: str) -> tuple[Any]:
+    cur.execute("SELECT * from profiles WHERE telegram_id == ?", (telegram_id, ))
     return cur.fetchone()
 
 
-async def remove_profiles(): # Смотрит последнюю дату входа всех профилей и удаляет старые профили
-    cur.execute("DELETE FROM profiles WHERE date(last_date) <= date('now', '-1 years')")
+def remove_old_profiles() -> None:
+    cur.execute("DELETE FROM profiles WHERE date(last_change_date) <= date('now', '-1 years')")
     db.commit()
