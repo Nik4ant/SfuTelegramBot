@@ -1,0 +1,3 @@
+def get_pe_qr_url(sfu_login: str) -> str:
+    # This is hilarious...
+    return f"https://u-sport.sfu-kras.ru/static/img/users/{sfu_login.lower()}.png"

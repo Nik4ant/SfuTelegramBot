@@ -14,8 +14,8 @@ from database import init_db
 
 
 def main() -> None:
-    telegram.start()
     init_db()
+    telegram.start()
 
 
 if __name__ == "__main__":
