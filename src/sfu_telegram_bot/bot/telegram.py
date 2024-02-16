@@ -7,9 +7,8 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from bot.app import keyboards
+from config import TELEGRAM_TOKEN
 from emoji import emojize
-
-from config import ADMIN_ID, TELEGRAM_TOKEN
 
 bot: Bot = Bot(token=TELEGRAM_TOKEN)
 dp: Dispatcher = Dispatcher(bot, storage=MemoryStorage())
@@ -47,16 +46,21 @@ async def pe_qr(message: types.Message) -> None:
 # endregion -- Usport
 
 
+# TODO: decorator that checks for auth
+# TODO 2: stabilize database stuff
 # region    -- Timetable
 @dp.message_handler(text=emojize("Что сегодня? :student:"))
 async def timetable_today(message: types.Message) -> None:
     student: tuple[Any] | None = db.find_profile(message.from_user.id)
+    # TODO: remove all debug prints later
     print(student)
     if student is None:
         await message.answer("Ошибка! Вы не авторизовались")
     else:
-        result: list[timetable.Lesson] = await timetable.parse_today(student[2], student[3])
-        await message.answer(f"\n{'-' * 60}\n".join(map(lambda x: str(x), result)))
+        result: list[timetable.Lesson] = await timetable.parse_today(
+            student[2], student[3]
+        )
+        await message.answer(timetable.format_day(result))
 
 
 @dp.message_handler(text=emojize("Расписание :teacher:"))
@@ -66,25 +70,49 @@ async def timetable_sequence_start(message: types.Message) -> None:
 
 @dp.message_handler(text="Эта неделя")
 async def timetable_this_week(message: types.Message) -> None:
-    await message.answer("расписание занятий на эту неделю")
+    student: tuple[Any] | None = db.find_profile(message.from_user.id)
+    # TODO: remove all debug prints later
+    print(student)
+    if student is None:
+        await message.answer("Ошибка! Вы не авторизовались")
+    else:
+        result: list[list[timetable.Lesson]] = await timetable.parse_week(
+            student[2], student[3]
+        )
+        await message.answer(timetable.format_week(result))
 
 
 @dp.message_handler(text="Четная неделя")
 async def timetable_week_even(message: types.Message) -> None:
-    # расписание занятий по четным неделям
-    await message.answer("расписание занятий по четным неделям")
+    student: tuple[Any] | None = db.find_profile(message.from_user.id)
+    # TODO: remove all debug prints later
+    print(student)
+    if student is None:
+        await message.answer("Ошибка! Вы не авторизовались")
+    else:
+        result: list[list[timetable.Lesson]] = await timetable.parse_week(
+            student[2], student[3], 1
+        )
+        await message.answer(timetable.format_week(result))
 
 
 @dp.message_handler(text="Нечетная неделя")
 async def timetable_week_odd(message: types.Message) -> None:
-    # расписание занятий по нечетным неделям
-    await message.answer("расписание занятий по нечетным неделям")
+    student: tuple[Any] | None = db.find_profile(message.from_user.id)
+    # TODO: remove all debug prints later
+    print(student)
+    if student is None:
+        await message.answer("Ошибка! Вы не авторизовались")
+    else:
+        result: list[list[timetable.Lesson]] = await timetable.parse_week(
+            student[2], student[3], 2
+        )
+        await message.answer(timetable.format_week(result))
 
 
 @dp.message_handler(text="Назад")
 async def timetable_sequence_end(message: types.Message) -> None:
-    # расписание занятий по нечетным неделям
-    await message.answer("ладно", reply_markup=keyboards.menu_board)
+    pass
 
 
 # endregion -- Timetable
@@ -102,7 +130,9 @@ async def auth(message: types.Message) -> None:
 # region    -- Input profile data
 @dp.message_handler(state=UserDataInputState.login)
 async def add_login(message: types.Message, state: FSMContext) -> None:
-    # TODO: insert new user when add login is called?
+    if db.profile_exists(message.from_user.id):
+        return
+
     db.create_empty_profile(message.from_user.id)
 
     async with state.proxy() as data:
@@ -130,6 +160,8 @@ async def add_subgroup(message: types.Message, state: FSMContext) -> None:
         db.add_subgroup_name(message.from_user.id, data["subgroup"])
     await message.answer("Вы авторизованы!")
     await state.finish()
+
+
 # endregion -- Input profile data
 
 

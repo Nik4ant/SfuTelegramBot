@@ -49,7 +49,7 @@ def clear_profile_data(telegram_id: str) -> None:
         """
         UPDATE profiles SET login = NULL, group_name = NULL, subgroup_name = NULL
         WHERE telegram_id == ?
-    """,
+        """,
         (telegram_id,),
     )
     db.commit()
@@ -80,6 +80,15 @@ def add_subgroup_name(telegram_id: str, subgroup_name: str) -> None:
 
 
 # endregion -- Edit profile
+
+
+def profile_exists(telegram_id: str) -> bool:
+    return (
+        cur.execute(
+            "SELECT COUNT(1) FROM profiles WHERE telegram_id = ?", (telegram_id,)
+        ).fetchone()[0]
+        != 0
+    )
 
 
 # TODO: вместо tuple возвращать объект User, чтобы там все поля были
