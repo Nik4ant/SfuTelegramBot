@@ -1,14 +1,15 @@
-from parser import timetable, usport
-from typing import Any
-
 import database as db
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from emoji import emojize
+
 from bot.app import keyboards
 from config import TELEGRAM_TOKEN
-from emoji import emojize
+from parser import timetable, usport
+from validation import *
+
 
 bot: Bot = Bot(token=TELEGRAM_TOKEN)
 dp: Dispatcher = Dispatcher(bot, storage=MemoryStorage())
@@ -26,39 +27,34 @@ async def send_welcome(message: types.Message) -> None:
         "Добро пожаловать, авторизуйтесь для начала работы.",
         reply_markup=keyboards.menu_board,
     )
-    db.create_empty_profile(message.from_user.id)
 
 
 # region    -- Usport
 @dp.message_handler(text=emojize("Отметиться на физру :person_cartwheeling:"))
 async def pe_qr(message: types.Message) -> None:
-    telegram_id: str = message.from_user.id
-    student: tuple[Any] | None = db.find_profile(telegram_id)
+    student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
 
     if student is None:
         await message.answer("Ошибка! Вы не авторизовались")
     else:
         await bot.send_photo(
-            chat_id=message.chat.id, photo=usport.get_pe_qr_url(student[1])
+            chat_id=message.chat.id, photo=usport.get_pe_qr_url(student.sfu_login)
         )
 
 
 # endregion -- Usport
 
 
-# TODO: decorator that checks for auth
-# TODO 2: stabilize database stuff
 # region    -- Timetable
+# TODO: Code feels the same; Add decorator for timetable endpoints?
 @dp.message_handler(text=emojize("Что сегодня? :student:"))
 async def timetable_today(message: types.Message) -> None:
-    student: tuple[Any] | None = db.find_profile(message.from_user.id)
-    # TODO: remove all debug prints later
-    print(student)
+    student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
     if student is None:
         await message.answer("Ошибка! Вы не авторизовались")
     else:
         result: list[timetable.Lesson] = await timetable.parse_today(
-            student[2], student[3]
+            student.group_name, student.subgroup
         )
         await message.answer(timetable.format_day(result))
 
@@ -70,51 +66,43 @@ async def timetable_sequence_start(message: types.Message) -> None:
 
 @dp.message_handler(text="Эта неделя")
 async def timetable_this_week(message: types.Message) -> None:
-    student: tuple[Any] | None = db.find_profile(message.from_user.id)
-    # TODO: remove all debug prints later
-    print(student)
+    student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
     if student is None:
         await message.answer("Ошибка! Вы не авторизовались")
     else:
         result: list[list[timetable.Lesson]] = await timetable.parse_week(
-            student[2], student[3]
+            student.group_name, student.subgroup
         )
         await message.answer(timetable.format_week(result))
 
 
 @dp.message_handler(text="Четная неделя")
 async def timetable_week_even(message: types.Message) -> None:
-    student: tuple[Any] | None = db.find_profile(message.from_user.id)
-    # TODO: remove all debug prints later
-    print(student)
+    student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
     if student is None:
         await message.answer("Ошибка! Вы не авторизовались")
     else:
         result: list[list[timetable.Lesson]] = await timetable.parse_week(
-            student[2], student[3], 1
+            student.group_name, student.subgroup, 1
         )
         await message.answer(timetable.format_week(result))
 
 
 @dp.message_handler(text="Нечетная неделя")
 async def timetable_week_odd(message: types.Message) -> None:
-    student: tuple[Any] | None = db.find_profile(message.from_user.id)
-    # TODO: remove all debug prints later
-    print(student)
+    student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
     if student is None:
         await message.answer("Ошибка! Вы не авторизовались")
     else:
         result: list[list[timetable.Lesson]] = await timetable.parse_week(
-            student[2], student[3], 2
+            student.group_name, student.subgroup, 2
         )
         await message.answer(timetable.format_week(result))
 
 
 @dp.message_handler(text="Назад")
-async def timetable_sequence_end(message: types.Message) -> None:
+async def timetable_sequence_end(_message: types.Message) -> None:
     pass
-
-
 # endregion -- Timetable
 
 
@@ -130,38 +118,45 @@ async def auth(message: types.Message) -> None:
 # region    -- Input profile data
 @dp.message_handler(state=UserDataInputState.login)
 async def add_login(message: types.Message, state: FSMContext) -> None:
-    if db.profile_exists(message.from_user.id):
+    if db.is_authenticated(message.from_user.id):
+        await message.answer("Вы уже авторизованы. Если хотите перезайти, нажмите `выйти`")
         return
 
-    db.create_empty_profile(message.from_user.id)
-
     async with state.proxy() as data:
-        data["login"] = message.text
-        db.add_login(message.from_user.id, data["login"])
+        data["login"] = format_sfu_login(message.text)
+        if not data["login"]:
+            await message.answer("Ошибка! Некоректный логин, попробуйте снова")
+            return
 
-    await message.answer("Теперь введите название вашей группы\nПример: ВГ24-01Б")
-    await UserDataInputState.next()
+        db.from_sfu_login(message.from_user.id, data["login"])
+        await message.answer("Теперь введите название вашей группы\nПример: ВГ24-01Б")
+        await UserDataInputState.next()
 
 
 @dp.message_handler(state=UserDataInputState.group)
 async def add_group(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
-        data["group"] = message.text
-        db.add_group_name(message.from_user.id, data["group"])
+        data["group"] = sanitize_str(message.text)
+        if not data["group"]:
+            await message.answer("Ошибка! Некоректная группа, попробуйте снова\n(Образец: ВГ23-01Б)")
+            return
 
-    await message.answer("Введите номер вашей подгруппы (просто число).")
-    await UserDataInputState.next()
+        db.add_group_to(message.from_user.id, data["group"])
+        await message.answer("Введите номер вашей подгруппы (просто число).")
+        await UserDataInputState.next()
 
 
 @dp.message_handler(state=UserDataInputState.subgroup)
 async def add_subgroup(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
-        data["subgroup"] = message.text
-        db.add_subgroup_name(message.from_user.id, data["subgroup"])
-    await message.answer("Вы авторизованы!")
-    await state.finish()
+        data["subgroup"] = sanitize_str(message.text)
+        if not data["subgroup"].isnumeric():
+            await message.answer("Ошибка! Подгруппа должна быть числом, попробуйте снова")
+            return
 
-
+        db.add_subgroup_to(message.from_user.id, data["subgroup"])
+        await message.answer("Вы авторизованы!")
+        await state.finish()
 # endregion -- Input profile data
 
 

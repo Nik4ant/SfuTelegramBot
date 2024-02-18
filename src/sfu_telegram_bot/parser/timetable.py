@@ -1,13 +1,13 @@
 # TODO: somehow implement cache to avoid parsing the same timetable every time?
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import datetime
 from enum import StrEnum
 from urllib import parse
 
 import aiohttp
-import pytz
 
-SFU_UNI_TIMEZONE = pytz.timezone("Asia/Krasnoyarsk")
+from config import SFU_UNI_TIMEZONE
+
 BASE_URL = "https://edu.sfu-kras.ru/api/timetable/get"
 BASE_URL_FORMAT = BASE_URL + "?target={group_name} ({subgroup_name} подгруппа)"
 aiohttp_session = aiohttp.ClientSession()
@@ -50,10 +50,15 @@ class Lesson:
 
 
 def format_day(day: list[Lesson]) -> str:
+    if len(day) == 0:
+        return "Не можем найти рассписание, сегодня выходной?"
     return f"\n\n".join(map(lambda x: str(x), day))
 
 
 def format_week(week: list[list[Lesson]]) -> str:
+    if len(week) == 0:
+        return "Не можем найти рассписание, это выходной?"
+
     result: str = ""
     i: int = 0
 

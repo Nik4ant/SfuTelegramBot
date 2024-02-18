@@ -1,6 +1,4 @@
 [project]
-name = "SfuTelegramBot"
-version = "0.1.0"
 description = ""
 authors = [
     # Указываться почту не обязательно
@@ -13,18 +11,16 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "aiogram==2.21",
     "emoji==2.10.1",
+    "bleach>=6.1.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "MIT"}
 
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
 
 #region    -- Dev Tools
 [tool.pdm]
-distribution = true
+distribution = false
 
 [tool.pdm.dev-dependencies]
 dev = [
