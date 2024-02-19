@@ -1,7 +1,9 @@
 import database as db
+import logging
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
+import aiogram.utils.exceptions as exceptions
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from emoji import emojize
 
@@ -28,7 +30,6 @@ async def send_welcome(message: types.Message) -> None:
         reply_markup=keyboards.menu_board,
     )
 
-
 # region    -- Usport
 @dp.message_handler(text=emojize("Отметиться на физру :person_cartwheeling:"))
 async def pe_qr(message: types.Message) -> None:
@@ -37,9 +38,14 @@ async def pe_qr(message: types.Message) -> None:
     if student is None:
         await message.answer("Ошибка! Вы не авторизовались")
     else:
-        await bot.send_photo(
-            chat_id=message.chat.id, photo=usport.get_pe_qr_url(student.sfu_login)
-        )
+        try:
+            await bot.send_photo(
+                chat_id=message.chat.id, photo=usport.get_pe_qr_url(student.sfu_login)
+            )
+        except exceptions.WrongFileIdentifier as err:
+            # just imagine that we have a support bot :)
+            await message.answer("Возникла ошибка. Проверьте входные данные или обратитесь в поддержку.")
+            logging.exception("There is an error in receiving the photo. Maybe the user's fault.", exc_info=err)
 
 
 # endregion -- Usport
@@ -75,6 +81,9 @@ async def timetable_this_week(message: types.Message) -> None:
         )
         await message.answer(timetable.format_week(result))
 
+@dp.message_handler(text="Назад")
+async def go_back(message: types.Message) -> None:
+    await message.answer("Вы в меню.", reply_markup=keyboards.menu_board)
 
 @dp.message_handler(text="Четная неделя")
 async def timetable_week_even(message: types.Message) -> None:
@@ -108,20 +117,31 @@ async def timetable_sequence_end(_message: types.Message) -> None:
 
 @dp.message_handler(text=emojize("Авторизоваться :rocket:"))
 async def auth(message: types.Message) -> None:
+    if not db.is_authenticated(message.from_user.id):
+        await UserDataInputState.login.set()
+        await message.answer(
+            "Введите ваш логин для входа на usport.\nПример: NSurname-UG24"
+        )
+    else:
+        await message.answer(
+            "Вы уже авторизованы. Если хотите перезайти, нажмите 'Перезайти'.", reply_markup=keyboards.logoff_choice_board
+        )
+
+@dp.message_handler(text="Назад")
+async def go_back(message: types.Message) -> None:
+    await message.answer("Вы в меню.", reply_markup=keyboards.menu_board)
+
+@dp.message_handler(text="Перезайти")
+async def relogin(message: types.Message) -> None:
     await UserDataInputState.login.set()
     await message.answer(
-        "Введите ваш логин для входа на usport.\n\
-                         Пример: NSurname-UG24"
-    )
-
-
+        "Введите ваш логин для входа на usport.\nПример: NSurname-UG24"
+        )
+    
 # region    -- Input profile data
+# TODO: make an logoff handler
 @dp.message_handler(state=UserDataInputState.login)
 async def add_login(message: types.Message, state: FSMContext) -> None:
-    if db.is_authenticated(message.from_user.id):
-        await message.answer("Вы уже авторизованы. Если хотите перезайти, нажмите `выйти`")
-        return
-
     async with state.proxy() as data:
         data["login"] = format_sfu_login(message.text)
         if not data["login"]:
@@ -155,7 +175,7 @@ async def add_subgroup(message: types.Message, state: FSMContext) -> None:
             return
 
         db.add_subgroup_to(message.from_user.id, data["subgroup"])
-        await message.answer("Вы авторизованы!")
+        await message.answer("Вы авторизованы!", reply_markup=keyboards.menu_board)
         await state.finish()
 # endregion -- Input profile data
 

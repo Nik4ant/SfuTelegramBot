@@ -10,3 +10,7 @@ timetable_board = ReplyKeyboardMarkup(resize_keyboard=True)
 timetable_board.row("Эта неделя")
 timetable_board.row("Четная неделя", "Нечетная неделя")
 timetable_board.row("Назад")
+
+logoff_choice_board = ReplyKeyboardMarkup(resize_keyboard=True)
+logoff_choice_board.row("Перезайти")
+logoff_choice_board.row("Назад")

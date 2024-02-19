@@ -83,7 +83,7 @@ def from_sfu_login(telegram_id: str, sfu_login: str) -> UserModel | None:
     try:
         _now = datetime.now(SFU_UNI_TIMEZONE)
         cur.execute(
-            "INSERT INTO profiles VALUES(?, ?, NULL, NULL, ?)",
+            "INSERT OR REPLACE INTO profiles VALUES(?, ?, NULL, NULL, ?)",
             (telegram_id, sfu_login, _now,)
         )
         db.commit()
@@ -149,10 +149,14 @@ def user_exists(telegram_id: str) -> bool:
         != 0
     )
 
-
-# TODO: check IF ALL fields have values in it
 def is_authenticated(telegram_id: str) -> bool:
-    return False
+    cur.execute(
+        "SELECT * FROM profiles WHERE telegram_id == ?", (telegram_id,))
+    data: tuple[Any] | None = cur.fetchone()
+    if data == None: return False
+    for elem in data:
+        if elem != None:
+            return True
 
 
 def clear_by_id(telegram_id: str, _sync_time_now: datetime = None) -> bool:

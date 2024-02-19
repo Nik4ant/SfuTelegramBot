@@ -14,9 +14,9 @@ aiohttp_session = aiohttp.ClientSession()
 
 
 class LessonType(StrEnum):
-    LECTURE = "лекция"
-    PRACTISE = "пр. занятие"
-    LAB = "лаб. работа"
+    LECTURE = "Лекция"
+    PRACTISE = "Пр. занятие"
+    LAB = "Лаб. работа"
 
 
 @dataclass
@@ -51,30 +51,30 @@ class Lesson:
 
 def format_day(day: list[Lesson]) -> str:
     if len(day) == 0:
-        return "Не можем найти рассписание, сегодня выходной?"
-    return f"\n\n".join(map(lambda x: str(x), day))
+        return "Не можем найти расписание, сегодня выходной?"
+    return "\n\n".join(map(lambda x: str(x), day))
 
 
 def format_week(week: list[list[Lesson]]) -> str:
     if len(week) == 0:
-        return "Не можем найти рассписание, это выходной?"
+        return "Не можем найти расписание, это выходной?"
 
     result: str = ""
     i: int = 0
 
     for day_name in [
-        "понедельник",
-        "вторник",
-        "среда",
-        "четверг",
-        "пятница",
-        "суббота",
+        "Понедельник",
+        "Вторник",
+        "Среда",
+        "Четверг",
+        "Пятница",
+        "Суббота",
     ]:
         day_name: str
         if i == len(week):
             continue
 
-        result += f"{day_name}\n"
+        result += f"{day_name}\n\n"
         result += format_day(week[i]) + f"\n{'-' * 60}\n"
         i += 1
     return result

@@ -3,7 +3,7 @@ description = ""
 authors = [
     # Указываться почту не обязательно
     {name = "Nikita", email = ""},
-    {name = "Aleksei", email = ""},
+    {name = "Alexey", email = ""},
     {name = "Kostia", email = ""},
     {name = "Aleksandr", email = ""},
 ]
@@ -16,7 +16,6 @@ dependencies = [
 requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "MIT"}
-
 
 #region    -- Dev Tools
 [tool.pdm]
@@ -57,7 +56,7 @@ show_error_codes = true
 warn_unused_ignores = true
 
 [tool.pdm.scripts]
-start = "pdm run python -m sfu_telegram_bot"
+start = "pdm run python src/sfu_telegram_bot"
 format-black = "black src/ tests/"
 format-isort = "isort src tests"
 format = {composite = ["format-black", "format-isort"]}
