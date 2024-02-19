@@ -1,8 +1,8 @@
 import logging
-from sys import exit
+import sqlite3 as sql
 from dataclasses import dataclass
 from datetime import datetime
-import sqlite3 as sql
+from sys import exit
 from typing import Any, Self
 
 from config import SFU_UNI_TIMEZONE
@@ -13,12 +13,11 @@ cur: sql.Cursor = db.cursor()
 
 @dataclass
 class UserModel:
-    telegram_id: str = ''
-    sfu_login: str = ''
-    group_name: str = ''
-    subgroup: str = ''
+    telegram_id: str = ""
+    sfu_login: str = ""
+    group_name: str = ""
+    subgroup: str = ""
     last_time_interaction: datetime = datetime.now()
-
 
     @classmethod
     def from_db_tuple(cls, data: tuple[Any]) -> Self | None:
@@ -68,7 +67,10 @@ def empty(telegram_id: str) -> UserModel | None:
         _now = datetime.now(SFU_UNI_TIMEZONE)
         cur.execute(
             "INSERT INTO profiles VALUES(?, NULL, NULL, NULL, ?)",
-            (telegram_id, _now, )
+            (
+                telegram_id,
+                _now,
+            ),
         )
         db.commit()
         logging.info(f"New user with id: {telegram_id}")
@@ -84,14 +86,22 @@ def from_sfu_login(telegram_id: str, sfu_login: str) -> UserModel | None:
         _now = datetime.now(SFU_UNI_TIMEZONE)
         cur.execute(
             "INSERT OR REPLACE INTO profiles VALUES(?, ?, NULL, NULL, ?)",
-            (telegram_id, sfu_login, _now,)
+            (
+                telegram_id,
+                sfu_login,
+                _now,
+            ),
         )
         db.commit()
         logging.info(f"New user with id: {telegram_id} from login `{sfu_login}`")
-        return UserModel(telegram_id=telegram_id, sfu_login=sfu_login, last_time_interaction=_now)
+        return UserModel(
+            telegram_id=telegram_id, sfu_login=sfu_login, last_time_interaction=_now
+        )
     except sql.Error as err:
         logging.exception(f"SQL error: {err.sqlite_errorname}", exc_info=err)
         return None
+
+
 # endregion -- Init profiles
 
 
@@ -120,11 +130,16 @@ def update_interaction_time_for(telegram_id: str) -> None:
     try:
         cur.execute(
             "UPDATE profiles SET last_time_interaction = ? WHERE telegram_id == ?",
-            (datetime.now(SFU_UNI_TIMEZONE), telegram_id, ),
+            (
+                datetime.now(SFU_UNI_TIMEZONE),
+                telegram_id,
+            ),
         )
         db.commit()
     except sql.Error as err:
         logging.exception(f"SQL error: {err.sqlite_errorname}", exc_info=err)
+
+
 # endregion -- Edit profiles
 
 
@@ -149,11 +164,12 @@ def user_exists(telegram_id: str) -> bool:
         != 0
     )
 
+
 def is_authenticated(telegram_id: str) -> bool:
-    cur.execute(
-        "SELECT * FROM profiles WHERE telegram_id == ?", (telegram_id,))
+    cur.execute("SELECT * FROM profiles WHERE telegram_id == ?", (telegram_id,))
     data: tuple[Any] | None = cur.fetchone()
-    if data == None: return False
+    if data == None:
+        return False
     for elem in data:
         if elem != None:
             return True
@@ -165,7 +181,9 @@ def clear_by_id(telegram_id: str, _sync_time_now: datetime = None) -> bool:
     @return: True - if no errors occurred; False - otherwise
     """
     try:
-        _now = datetime.now(SFU_UNI_TIMEZONE) if _sync_time_now is None else _sync_time_now
+        _now = (
+            datetime.now(SFU_UNI_TIMEZONE) if _sync_time_now is None else _sync_time_now
+        )
 
         cur.execute(
             """
@@ -196,12 +214,11 @@ def remove_old_profiles() -> None:
 
 def remove_by_id(telegram_id: str) -> None:
     try:
-        cur.execute(
-            "DELETE FROM profiles WHERE telegram_id == ?",
-            (telegram_id, )
-        )
+        cur.execute("DELETE FROM profiles WHERE telegram_id == ?", (telegram_id,))
         db.commit()
     except sql.Error as err:
         logging.exception(f"SQL error: {err.sqlite_errorname}", exc_info=err)
         return None
+
+
 # endregion -- Search/Delete

@@ -5,7 +5,6 @@ from enum import StrEnum
 from urllib import parse
 
 import aiohttp
-
 from config import SFU_UNI_TIMEZONE
 
 BASE_URL = "https://edu.sfu-kras.ru/api/timetable/get"
@@ -14,9 +13,9 @@ aiohttp_session = aiohttp.ClientSession()
 
 
 class LessonType(StrEnum):
-    LECTURE = "Лекция"
-    PRACTISE = "Пр. занятие"
-    LAB = "Лаб. работа"
+    LECTURE = "лекция"
+    PRACTISE = "пр. занятие"
+    LAB = "лаб. работа"
 
 
 @dataclass
