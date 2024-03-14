@@ -4,13 +4,21 @@ from emoji import emojize
 menu_board = ReplyKeyboardMarkup(resize_keyboard=True)
 menu_board.row(emojize("Что сегодня? :student:"), emojize("Расписание :teacher:"))
 menu_board.row(emojize("Отметиться на физру :person_cartwheeling:"))
-menu_board.row(emojize("Авторизоваться :rocket:"))
+menu_board.row(emojize("Настройки/Settings :gear:"))
 
 admin_menu_board = ReplyKeyboardMarkup(resize_keyboard=True)
 admin_menu_board.row(emojize("Что сегодня? :student:"), emojize("Расписание :teacher:"))
 admin_menu_board.row(emojize("Отметиться на физру :person_cartwheeling:"))
-admin_menu_board.row(emojize("Авторизоваться :rocket:"))
+admin_menu_board.row(emojize("Настройки/Settings :gear:"))
 admin_menu_board.row("Админ-панель")
+
+settings_board = ReplyKeyboardMarkup(resize_keyboard=True)
+settings_board.row("Выбрать язык / Choose language")
+settings_board.row(emojize("Авторизоваться :rocket:"))
+settings_board.row("Назад")
+
+choose_language_board = ReplyKeyboardMarkup(resize_keyboard=True)
+choose_language_board.row("RU", "EN")
 
 admin_panel = ReplyKeyboardMarkup(resize_keyboard=True)
 admin_panel.row("Почистить бд", "Почитать сообщения")

@@ -7,6 +7,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from bot.app import generate_image
 from bot.app import keyboards
 from config import ADMIN_ID, TELEGRAM_TOKEN
 from emoji import emojize
@@ -22,9 +23,33 @@ class UserDataInputState(StatesGroup):
     subgroup = State()
 
 
+async def is_admin(id: int) -> bool:  # ADMIN ID CHECKER
+    if id == int(ADMIN_ID):
+        return True
+    return False
+
+
+async def parse(message, result, student, num, bot):
+    if student is None:
+        await message.answer("Ошибка! Вы не авторизовались")
+    elif num == None:
+        result = await timetable.parse_today(student.group_name, student.subgroup)
+        for_generate = generate_image.generate(timetable.format_day(result), True)
+        await bot.send_photo(chat_id=message.chat.id, photo=for_generate)
+    elif num == 0:
+        result = await timetable.parse_week(student.group_name, student.subgroup)
+        for_generate = generate_image.generate(timetable.format_week(result), False)
+        await bot.send_photo(chat_id=message.chat.id, photo=for_generate)
+    else:
+        result = await timetable.parse_week(student.group_name, student.subgroup, num)
+        for_generate = generate_image.generate(timetable.format_week(result), False)
+        await bot.send_photo(chat_id=message.chat.id, photo=for_generate)
+
+
+# START
 @dp.message_handler(commands=["start"])
 async def send_welcome(message: types.Message) -> None:
-    if message.from_user.id == int(ADMIN_ID):
+    if await is_admin(message.from_user.id):
         await message.reply(
             f"Добро пожаловать, {message.from_user.first_name}!",
             reply_markup=keyboards.admin_menu_board,
@@ -36,15 +61,16 @@ async def send_welcome(message: types.Message) -> None:
         )
 
 
+# region    -- ADMIN
 @dp.message_handler(text=("Админ-панель"))
 async def clear_db(message: types.Message) -> None:
-    if message.from_user.id == int(ADMIN_ID):
+    if await is_admin(message.from_user.id):
         await message.answer("Админ-панель", reply_markup=keyboards.admin_panel)
 
 
 @dp.message_handler(text=("Почистить бд"))
 async def clear_db(message: types.Message) -> None:
-    if message.from_user.id == int(ADMIN_ID):
+    if await is_admin(message.from_user.id):
         db.remove_old_profiles()
         await message.answer("База данных почищена!")
 
@@ -52,21 +78,24 @@ async def clear_db(message: types.Message) -> None:
 # TODO: add support
 @dp.message_handler(text=("Почитать сообщения"))
 async def clear_db(message: types.Message) -> None:
-    if message.from_user.id == int(ADMIN_ID):
+    if await is_admin(message.from_user.id):
         await message.answer("у вас ?? сообщений. Введите число сообщения.")
 
 
 # TODO: add a function for cleaning cache (and add cache)
 @dp.message_handler(text=("Очистить кэш расписаний"))
 async def clear_db(message: types.Message) -> None:
-    if message.from_user.id == int(ADMIN_ID):
+    if await is_admin(message.from_user.id):
         await message.answer("Кэш расписаний очищен!")
 
 
 @dp.message_handler(text=("В меню"))
 async def clear_db(message: types.Message) -> None:
-    if message.from_user.id == int(ADMIN_ID):
+    if await is_admin(message.from_user.id):
         await message.answer("Меню", reply_markup=keyboards.admin_menu_board)
+
+
+# endregion -- ADMIN
 
 
 # region    -- Usport
@@ -100,13 +129,8 @@ async def pe_qr(message: types.Message) -> None:
 @dp.message_handler(text=emojize("Что сегодня? :student:"))
 async def timetable_today(message: types.Message) -> None:
     student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
-    if student is None:
-        await message.answer("Ошибка! Вы не авторизовались")
-    else:
-        result: list[timetable.Lesson] = await timetable.parse_today(
-            student.group_name, student.subgroup
-        )
-        await message.answer(timetable.format_day(result))
+    result: list[timetable.Lesson] = []
+    await parse(message=message, result=result, student=student, num=None, bot=bot)
 
 
 @dp.message_handler(text=emojize("Расписание :teacher:"))
@@ -117,50 +141,31 @@ async def timetable_sequence_start(message: types.Message) -> None:
 @dp.message_handler(text="Эта неделя")
 async def timetable_this_week(message: types.Message) -> None:
     student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
-    if student is None:
-        await message.answer("Ошибка! Вы не авторизовались")
-    else:
-        result: list[list[timetable.Lesson]] = await timetable.parse_week(
-            student.group_name, student.subgroup
-        )
-        await message.answer(timetable.format_week(result))
-
-
-@dp.message_handler(text="Назад")
-async def go_back(message: types.Message) -> None:
-    await message.answer("Вы в меню.", reply_markup=keyboards.menu_board)
+    result: list[timetable.Lesson] = []
+    await parse(message=message, result=result, student=student, num=0, bot=bot)
 
 
 @dp.message_handler(text="Четная неделя")
 async def timetable_week_even(message: types.Message) -> None:
     student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
-    if student is None:
-        await message.answer("Ошибка! Вы не авторизовались")
-    else:
-        result: list[list[timetable.Lesson]] = await timetable.parse_week(
-            student.group_name, student.subgroup, 1
-        )
-        await message.answer(timetable.format_week(result))
+    result: list[timetable.Lesson] = []
+    await parse(message=message, result=result, student=student, num=2, bot=bot)
 
 
 @dp.message_handler(text="Нечетная неделя")
 async def timetable_week_odd(message: types.Message) -> None:
     student: db.UserModel | None = db.get_user_by_id(message.from_user.id)
-    if student is None:
-        await message.answer("Ошибка! Вы не авторизовались")
-    else:
-        result: list[list[timetable.Lesson]] = await timetable.parse_week(
-            student.group_name, student.subgroup, 2
-        )
-        await message.answer(timetable.format_week(result))
-
-
-@dp.message_handler(text="Назад")
-async def timetable_sequence_end(_message: types.Message) -> None:
-    pass
+    result: list[timetable.Lesson] = []
+    await parse(message=message, result=result, student=student, num=1, bot=bot)
 
 
 # endregion -- Timetable
+
+
+# region    -- Settings
+@dp.message_handler(text=emojize("Настройки/Settings :gear:"))
+async def settings(message: types.Message) -> None:
+    await message.answer("Выберите настройки", reply_markup=keyboards.settings_board)
 
 
 @dp.message_handler(text=emojize("Авторизоваться :rocket:"))
@@ -177,9 +182,35 @@ async def auth(message: types.Message) -> None:
         )
 
 
-@dp.message_handler(text="Назад")
-async def go_back(message: types.Message) -> None:
-    await message.answer("Вы в меню.", reply_markup=keyboards.menu_board)
+@dp.message_handler(text=("Выбрать язык / Choose language"))
+async def choose_language(message: types.Message) -> None:
+    await message.answer(
+        "Выберите язык/Choose your language",
+        reply_markup=keyboards.choose_language_board,
+    )
+
+
+@dp.message_handler(text=("RU"))
+async def ru_lang(message: types.Message) -> None:
+    if await is_admin(message.from_user.id):
+        await message.answer(
+            "The language has been changed to Russian", reply_markup=keyboards.admin_menu_board
+        )
+    else:
+        await message.answer(
+            "The language has been changed to Russian", reply_markup=keyboards.menu_board
+        )
+
+@dp.message_handler(text=("EN"))
+async def ru_lang(message: types.Message) -> None:
+    if await is_admin(message.from_user.id):
+        await message.answer(
+            "The language has been changed to English", reply_markup=keyboards.admin_menu_board
+        )
+    else:
+        await message.answer(
+            "The language has been changed to English", reply_markup=keyboards.menu_board
+        )
 
 
 @dp.message_handler(text="Перезайти")
@@ -188,6 +219,17 @@ async def relogin(message: types.Message) -> None:
     await message.answer(
         "Введите ваш логин для входа на usport.\nПример: NSurname-UG24"
     )
+
+
+@dp.message_handler(text="Назад")
+async def go_back(message: types.Message) -> None:
+    if await is_admin(message.from_user.id):
+        await message.answer("Вы в меню.", reply_markup=keyboards.admin_menu_board)
+    else:
+        await message.answer("Вы в меню.", reply_markup=keyboards.menu_board)
+
+
+# endregion    -- Settings
 
 
 # region    -- Input profile data

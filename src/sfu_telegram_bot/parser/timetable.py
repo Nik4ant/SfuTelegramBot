@@ -125,13 +125,18 @@ async def parse_week(
                 result[index].append(Lesson.from_json(item))
         else:
             index += 1
+            if day_num == index + 1:
+                if item.get("week", "1") == target_week_num:
+                    if index not in result:
+                        result.append([])
+                    result[index].append(Lesson.from_json(item))
 
     return result
 
 
 def _get_week_num(now_datetime: datetime) -> int:
     """@return: 1 - even week; 2 - odd week"""
-    return (now_datetime.day // 7 + 1) % 2 + 1
+    return (now_datetime.day // 7) % 2 + 1
 
 
 async def _get_timetable_json_for(group_name: str, subgroup_name: str) -> dict:
