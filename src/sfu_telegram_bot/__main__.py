@@ -8,14 +8,21 @@ sys.path.extend(
     ]
 )
 
-from bot import telegram
+from bot import support, telegram
 from database import init_db
 
 
 def main() -> None:
     try:
         init_db()
-        telegram.start()
+        print("Choose bot ('main' for main bot, 'support' for support bot)")
+        choose = str(input())
+
+        if choose == "main":
+            telegram.start()
+        elif choose == "support":
+            support.start()
+
     except KeyboardInterrupt:
         logging.info("Process interrupted")
     except Exception as e:

@@ -14,15 +14,16 @@ admin_menu_board.row("Админ-панель")
 
 settings_board = ReplyKeyboardMarkup(resize_keyboard=True)
 settings_board.row("Выбрать язык / Choose language")
-settings_board.row(emojize("Авторизоваться :rocket:"))
+settings_board.row(
+    emojize("Авторизоваться :rocket:"), emojize("Написать в поддержку :ambulance:")
+)
 settings_board.row("Назад")
 
 choose_language_board = ReplyKeyboardMarkup(resize_keyboard=True)
 choose_language_board.row("RU", "EN")
 
 admin_panel = ReplyKeyboardMarkup(resize_keyboard=True)
-admin_panel.row("Почистить бд", "Почитать сообщения")
-admin_panel.row("Очистить кэш расписаний")
+admin_panel.row("Почистить бд", "Очистить кэш расписаний")
 admin_panel.row("В меню")
 
 timetable_board = ReplyKeyboardMarkup(resize_keyboard=True)

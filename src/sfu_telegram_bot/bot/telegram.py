@@ -7,8 +7,8 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from bot.app import generate_image
-from bot.app import keyboards
+from bot import support
+from bot.app import generate_image, keyboards
 from config import ADMIN_ID, TELEGRAM_TOKEN
 from emoji import emojize
 from validation import *
@@ -21,6 +21,10 @@ class UserDataInputState(StatesGroup):
     login = State()
     group = State()
     subgroup = State()
+
+
+class SupportMessageInput(StatesGroup):
+    user_message = State()
 
 
 async def is_admin(id: int) -> bool:  # ADMIN ID CHECKER
@@ -75,18 +79,11 @@ async def clear_db(message: types.Message) -> None:
         await message.answer("База данных почищена!")
 
 
-# TODO: add support
-@dp.message_handler(text=("Почитать сообщения"))
-async def clear_db(message: types.Message) -> None:
-    if await is_admin(message.from_user.id):
-        await message.answer("у вас ?? сообщений. Введите число сообщения.")
-
-
 # TODO: add a function for cleaning cache (and add cache)
 @dp.message_handler(text=("Очистить кэш расписаний"))
 async def clear_db(message: types.Message) -> None:
     if await is_admin(message.from_user.id):
-        await message.answer("Кэш расписаний очищен!")
+        await message.answer("Данная функция не реализована.")
 
 
 @dp.message_handler(text=("В меню"))
@@ -194,22 +191,27 @@ async def choose_language(message: types.Message) -> None:
 async def ru_lang(message: types.Message) -> None:
     if await is_admin(message.from_user.id):
         await message.answer(
-            "The language has been changed to Russian", reply_markup=keyboards.admin_menu_board
+            "The language has been changed to Russian",
+            reply_markup=keyboards.admin_menu_board,
         )
     else:
         await message.answer(
-            "The language has been changed to Russian", reply_markup=keyboards.menu_board
+            "The language has been changed to Russian",
+            reply_markup=keyboards.menu_board,
         )
+
 
 @dp.message_handler(text=("EN"))
 async def ru_lang(message: types.Message) -> None:
     if await is_admin(message.from_user.id):
         await message.answer(
-            "The language has been changed to English", reply_markup=keyboards.admin_menu_board
+            "The language has been changed to English",
+            reply_markup=keyboards.admin_menu_board,
         )
     else:
         await message.answer(
-            "The language has been changed to English", reply_markup=keyboards.menu_board
+            "The language has been changed to English",
+            reply_markup=keyboards.menu_board,
         )
 
 
@@ -221,6 +223,14 @@ async def relogin(message: types.Message) -> None:
     )
 
 
+@dp.message_handler(text=emojize("Написать в поддержку :ambulance:"))
+async def support_message(message: types.Message) -> None:
+    await message.answer(
+        "Введите ваше сообщение, если хотите сообщить о баге. Отправка фото недоступна."
+    )
+    await SupportMessageInput.user_message.set()
+
+
 @dp.message_handler(text="Назад")
 async def go_back(message: types.Message) -> None:
     if await is_admin(message.from_user.id):
@@ -230,6 +240,15 @@ async def go_back(message: types.Message) -> None:
 
 
 # endregion    -- Settings
+@dp.message_handler(state=SupportMessageInput.user_message)
+async def user_support_message(message: types.Message, state: FSMContext) -> None:
+    async with state.proxy() as data:
+        if message.text:
+            data["user_message"] = format_message(message.from_user.id, message.text)
+            await support.send_message(data["user_message"])
+
+    await state.finish()
+    await message.answer("Ваше обращение принято!")
 
 
 # region    -- Input profile data
