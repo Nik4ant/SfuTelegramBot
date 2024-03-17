@@ -1,4 +1,9 @@
 import bleach
+from config import ADMIN_ID
+
+
+def is_admin(telegram_id: int) -> bool:
+    return ADMIN_ID == telegram_id
 
 
 def format_sfu_login(login: str) -> str:

@@ -1,7 +1,7 @@
 [project]
 description = ""
 authors = [
-    # Указываться почту не обязательно
+    # Указывать почту не обязательно
     {name = "Nikita", email = ""},
     {name = "Alexey", email = ""},
     {name = "Kostia", email = ""},
@@ -13,6 +13,7 @@ dependencies = [
     "emoji==2.10.1",
     "bleach>=6.1.0",
     "pillow>=10.2.0",
+    "apscheduler>=3.10.4",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -57,16 +58,14 @@ show_error_codes = true
 warn_unused_ignores = true
 
 [tool.pdm.scripts]
-start = "pdm run python src/sfu_telegram_bot"
-format-black = "black src/ tests/"
-format-isort = "isort src tests"
-format = {composite = ["format-black", "format-isort"]}
-#lint-bandit = "bandit -r src/"
+start = "pdm run python -m src"
+# Currently formaters make code worse, TODO: configure them properly
+#format-black = "black src/ tests/"
+#format-isort = "isort src tests"
+#format = {composite = ["format-black", "format-isort"]}
 lint-black = "black --check --diff src/ tests/"
 lint-flake8 = "flake8 src/ tests/"
 lint-isort = "isort --check --diff src tests"
 lint-mypy = "mypy src/ tests"
-#lint-vulture = "vulture src"
 lint = {composite = ["lint-black", "lint-flake8", "lint-isort", "lint-mypy", "pylint --recursive=y ."]}
-#test = "pytest tests/"
 #endregion -- Dev Tools
