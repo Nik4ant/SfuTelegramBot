@@ -4,106 +4,80 @@ from typing import Optional
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from . import img_generator
-from parser import Lesson, ODD_DAY_NUM, EVEN_DAY_NUM, parse_week
+from .common import *
 
 
 UPDATE_EVERY_N_MINUTES: int = 60 * 24
 cache_scheduler = BackgroundScheduler()
 # Key - (group: str, subgroup: str)
 # Value - dict[
-#   specific_week_num: int, week_timetable: list[list[lessons]]
+#   specific_week_num: int, timetable_images: dict[int, str]
 # ], where:
-# - specific_week_num: ONLY either parser.EVEN_DAY_NUM or parser.ODD_DAY_NUM
+# - specific_week_num: ONLY either EVEN_DAY_NUM or ODD_DAY_NUM
+# - key for timetable_images is day num from 0 to 6
+# (Note: using dict for timetable_images because insertion in order is not guaranteed)
 _global_cache: dict[
-	tuple[str, str], dict[int, list[list[Lesson]]]
+	tuple[str, str], dict[int, dict[int, list[str]]]
 ] = {}
 
 
 def init_cache_scheduler() -> None:
 	cache_scheduler.add_job(
-		update_timetable_cache, "interval",
+		reset_global_cache, "interval",
 		minutes=UPDATE_EVERY_N_MINUTES, id="timetable_cache_update"
 	)
 	cache_scheduler.start()
-	week_cache.clear()
+	reset_global_cache()
 
 
-async def update_timetable_cache() -> None:
+def reset_global_cache() -> None:
 	global _global_cache
-
-	# FIXME: TODO: CRITICAL:
-	# At some point old (group, subgroup) entries inside _global_cache might become obsolete,
-	# making timetable module parse incorrect data again, again and again...
-	# NOTE: Solution - only delete old data ignoring previous cache entries? 
-	keys = list(_global_cache.keys()).copy()
-	# Clear old data
+	
 	_global_cache.clear()
 	img_generator.delete_all()
-	# Get new one for all previous cache entries
-	for data in keys:
-		group, subgroup = data
-		group: str; subgroup: str
-
-		even_week: list[list[Lesson]] | None = await parse_week(group, subgroup, EVEN_DAY_NUM)
-		if even_week is not None:
-			_put_week(group, subgroup, EVEN_DAY_NUM, even_week)
-		else:
-			logging.error("Cache update error! Can't parse even week for %s, %s", group, subgroup)
-		
-		odd_week: list[list[Lesson]] | None = await parse_week(group, subgroup, ODD_DAY_NUM)
-		if odd_week is not None:
-			_put_week(group, subgroup, ODD_DAY_NUM, odd_week)
-		else:
-			logging.error("Cache update error! Can't parse odd week for %s, %s", group, subgroup)
+	# Note: It's tempting to re-parse and re-generate all the data based on previous entries.
+	# However at some point old (group, subgroup) entries inside _global_cache might become obsolete,
+	# parsing incorrect data again, again and again + keeping garbage data around...
+	# SO NEVER EVER DO THAT!
 
 
-def try_get_day(group: str, subgroup: str, week_num: int, day_index: int) -> list[Lesson] | None:
+def try_get_day(group: str, subgroup: str, week_num: int, day_index: int) -> str | None:
 	"""
 	@param week_num: MUST be either EVEN_DAY_NUM or ODD_DAY_NUM
 	"""
-	week_data: list[list[Lesson]] | None = try_get_week(group, subgroup, week_num)
+	week_data: list[str] | None = try_get_week(group, subgroup, week_num)
 	if week_data is None:
 		return None
 	
 	return week_data[day_index]
 
 
-def try_get_week(group: str, subgroup: str, week_num: int) -> list[list[Lesson]] | None:
+def try_get_week(group: str, subgroup: str, week_num: int) -> list[str] | None:
 	"""
 	@param week_num: MUST be either EVEN_DAY_NUM or ODD_DAY_NUM
 	"""
-	return _global_cache.get((group, subgroup), {}).get(week_num, None)
+	days: dict[int, list[str]] | None = _global_cache.get((group, subgroup), {}).get(week_num, None)
+	if days is not None:
+		return days.values()
+	return None
 
 
-async def try_put_week(group: str, subgroup: str, week_num: int, data: Optional[list[list[Lesson]]] = None) -> None:
-	"""
-	1) Attempts to update cache either by using specified data or by parsing it.
-	2) If update was successful, _put_week will call image generator
-	@param data: If specified used as a value for cache update
-	@param week_num: MUST be either EVEN_DAY_NUM or ODD_DAY_NUM
-	"""
-
-	if data is None:
-		new_data: list[list[Lesson]] | None = await parse_week(group, subgroup, week_num)
-		if new_data is not None:
-			_put_week(group, subgroup, week_num, new_data)
-		else:
-			logging.error("Cache update error! Can't parse week for %s, %s", group, subgroup)
-	else:
-		_put_week(group, subgroup, week_num, data)
+def put_week(days: list[Day]) -> list[str]:
+	"""@return: Paths to timetable images added to the cache"""
+	return [put_day(day) for day in days]
 
 
-def _put_week(group: str, subgroup: str, week_num: int, data: list[list[Lesson]]) -> None:
-	"""
-	Updates global cache with specified data and calls image generator
-	@param week_num: MUST be either EVEN_DAY_NUM or ODD_DAY_NUM
-	"""
+def put_day(day: Day) -> str:
 	global _global_cache
 	
-	if (group, subgroup) not in _global_cache:
-		_global_cache[(group, subgroup)] = {}
-	
-	_global_cache[(group, subgroup)][week_num] = data
+	key: tuple[str, str] = (day.for_group, day.for_subgroup)
 
-	for i in range(len(data)):
-		img_generator.generate_all_day(group, subgroup, week_num, i, data[i])
+	if key not in _global_cache:
+		_global_cache[key] = {}
+	
+	if day.week_num not in _global_cache[key]:
+		_global_cache[key][day.week_num] = {}
+	
+	new_img: str = img_generator.generate_day(day)
+	_global_cache[key][day.week_num][day.day_num] = new_img
+	return new_img

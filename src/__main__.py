@@ -5,7 +5,6 @@ import os
 import sys
 
 from bot import support, telegram
-from bot.app import image_generator
 from database import init_db
 from sfu_api import timetable
 
@@ -31,7 +30,7 @@ def main() -> None:
         else:
             logging.info("Starting the default bot")
             init_db()
-            image_generator.init()
+            timetable.img_generator.init()
             timetable.cacher.init_cache_scheduler()
             telegram.start()
     except KeyboardInterrupt:

@@ -103,7 +103,7 @@ async def timetable_sequence_start(message: types.Message) -> None:
 	await message.answer("Выберите неделю.", reply_markup=keyboards.timetable_board)
 
 
-# TODO: student: db.UserModel | None thingy can be handled by a generator?
+# TODO: student: db.UserModel | None thingy (get_user_if_authenticated) can be handled by a generator?
 @dp.message_handler(text=emojize("Что сегодня? :student:"))
 async def timetable_today(message: types.Message) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
@@ -119,14 +119,14 @@ async def timetable_today(message: types.Message) -> None:
 			await bot.send_photo(chat_id=message.chat.id, photo=img_file)
 
 
-async def _timetable_week(message: types.Message, target_week_num: int = timetable_parser.CURRENT_DAY_NUM) -> None:
+async def _timetable_week(message: types.Message, target_week_num: int = timetable_parser.WeekNum.CURRENT) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
 	if student is None:
 		await message.answer("Ошибка! Вы не авторизовались")
 		return
 
-	img_paths: list[str] | None = await timetable_parser.parse_today(student.group_name, student.subgroup, target_week_num)
-	if img_path is None:
+	img_paths: list[str] | None = await timetable_parser.parse_week(student.group_name, student.subgroup, target_week_num)
+	if img_paths is None:
 		await message.answer("Что-то пошло не так. Попробуйте позже или напишите в поддержку :()")
 	else:
 		for img_path in img_paths:
@@ -141,12 +141,12 @@ async def timetable_this_week(message: types.Message) -> None:
 
 @dp.message_handler(text="Четная неделя")
 async def timetable_week_even(message: types.Message) -> None:
-	await _timetable_week(message, timetable_parser.EVEN_DAY_NUM)
+	await _timetable_week(message, timetable_parser.WeekNum.EVEN)
 
 
 @dp.message_handler(text="Нечетная неделя")
 async def timetable_week_odd(message: types.Message) -> None:
-	await _timetable_week(message, timetable_parser.ODD_DAY_NUM)
+	await _timetable_week(message, timetable_parser.WeekNum.ODD)
 # endregion -- Timetable
 
 
