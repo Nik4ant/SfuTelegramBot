@@ -22,7 +22,7 @@ async def parse_today(group_name: str, subgroup_name: str) -> str | None:
 	today_day_num: int = _date_now.weekday() + 1
 	target_week_num: str = str(_get_week_num(_date_now))
 
-	result: Day = Day(today_day_num, int(target_week_num), group_name, subgroup_name, [])
+	result: Day = Day(today_day_num - 1, int(target_week_num), group_name, subgroup_name, [])
 
 	cache_data: str | None = cacher.try_get_day(group_name, subgroup_name, int(target_week_num), today_day_num)
 	if cache_data is not None:

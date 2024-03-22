@@ -74,7 +74,6 @@ def _gen_day(day: list[Lesson], day_num: int, file_path: str, dark_theme: bool) 
 		(1080, height),
 		schema["bg"]
 	)
-	print("DEBUG: ", im.size)
 	dr = ImageDraw.Draw(im)
 
 	v_offset: int = BASE_HEIGHT
