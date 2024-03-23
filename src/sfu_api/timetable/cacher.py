@@ -49,6 +49,9 @@ def try_get_day(group: str, subgroup: str, week_num: int, day_index: int) -> str
 	if week_data is None:
 		return None
 	
+	# week_data isn't guaranteed to have data for ALL days
+	if day_index >= len(week_data):
+		return None
 	return week_data[day_index]
 
 
@@ -58,7 +61,7 @@ def try_get_week(group: str, subgroup: str, week_num: int) -> list[str] | None:
 	"""
 	days: dict[int, list[str]] | None = _global_cache.get((group, subgroup), {}).get(week_num, None)
 	if days is not None:
-		return days.values()
+		return list(days.values())
 	return None
 
 

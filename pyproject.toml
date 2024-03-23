@@ -58,7 +58,7 @@ show_error_codes = true
 warn_unused_ignores = true
 
 [tool.pdm.scripts]
-start = "pdm run python -m src"
+start = "pdm run python src"
 # Currently formaters make code worse, TODO: configure them properly
 #format-black = "black src/ tests/"
 #format-isort = "isort src tests"

@@ -7,7 +7,12 @@ from config import SFU_UNI_TIMEZONE
 
 
 BASE_URL = "https://edu.sfu-kras.ru/api/timetable/get"
-BASE_URL_FORMAT = BASE_URL + "?target={group_name} (подгруппа {subgroup_name})"
+# NOTE: Apparently Sfu api HAS 2 DIFFERENT URL VARIANTS FOR THE SAME ENDPOINT?!?!
+# O_o. If something goes wrong, there is a chance that it's another url variant -_-
+URL_VARIANTS: list[str] = [
+	BASE_URL + "?target={group_name} ({subgroup_name} подгруппа)",
+	BASE_URL + "?target={group_name} (подгруппа {subgroup_name})",
+]
 aiohttp_session = aiohttp.ClientSession()
 
 
@@ -50,7 +55,7 @@ async def parse_week(
 ) -> list[str] | None:
 	"""
 	Parses timetable for current/specified week.
-	@param force_target_week_num: Optional week number (1 - even; 2 - odd; -1 - current. See constants)
+	@param force_target_week_num: Optional week number (See enum in common.py)
 	@return: Path to generated images; None - if something went wrong
 	"""
 	result: list[Day] = []
@@ -105,18 +110,23 @@ def _get_week_num(now_datetime: datetime) -> int:
 
 
 async def _get_timetable_json_for(group_name: str, subgroup_name: str) -> dict | None:
-	url: str = BASE_URL_FORMAT.format(
-		group_name=group_name, subgroup_name=subgroup_name
-	)
-	encoded = parse.urlencode(parse.parse_qs(parse.urlparse(url).query), doseq=True)
-	url = "{}&{}".format(BASE_URL, encoded)
-	try:
-		async with aiohttp_session.get(url) as response:
-			if response.status == 200:
-				return await response.json()
-			logging.error(f"Error {response.status} while calling SFU API `{url}`")
-	except aiohttp.ClientError as e:
-		logging.error(f"Failed to call SFU API `{url}`", exec_info=e)
+	for variant in URL_VARIANTS:
+		url: str = variant.format(
+			group_name=group_name, subgroup_name=subgroup_name
+		)
+		encoded = parse.urlencode(parse.parse_qs(parse.urlparse(url).query), doseq=True)
+		url = "{}&{}".format(BASE_URL, encoded)
+		try:
+			async with aiohttp_session.get(url) as response:
+				if response.status == 200:
+					json: dict = await response.json()
+					# If empty try next url variant...
+					if len(json.get("timetable", [])) == 0:
+						continue
+					return json
+				logging.error(f"Error {response.status} while calling SFU API `{url}`")
+		except aiohttp.ClientError as e:
+			logging.error(f"Failed to call SFU API `{url}`", exec_info=e)
 	
 	return None
 

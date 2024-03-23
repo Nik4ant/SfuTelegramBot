@@ -1,4 +1,6 @@
 import logging
+import functools
+from typing import Callable, Any
 
 import aiogram.utils.exceptions as exceptions
 from aiogram import Bot, Dispatcher, executor, types
@@ -44,9 +46,34 @@ async def send_welcome(message: types.Message) -> None:
 		)
 
 
+# region    -- Utils/Other
+def update_interaction_time(func: Callable) -> Any:
+	"""
+	Updates last interaction time in db for detected user_id.
+	(Assumes that at least 1 argument is Message or CallbackQuery!)
+	If no user_id was detected, does nothing.
+	"""
+
+	@functools.wraps(func)
+	def inner(*args, **kwargs):
+		user_id: str | None = None
+		for arg in args:
+			if isinstance(arg, types.Message):
+				user_id = arg.from_user.id
+			elif isinstance(arg, types.CallbackQuery):
+				user_id = arg.from_user.id
+		
+		if user_id is not None:
+			db.update_interaction_time_for(user_id)
+		return func(*args, **kwargs)
+	
+	return inner
+# endregion -- Utils/Other
+
+
 # region    -- ADMIN
 @dp.message_handler(text=("Админ-панель"))
-async def clear_db(message: types.Message) -> None:
+async def admin_panes(message: types.Message) -> None:
 	if is_admin(message.from_user.id):
 		await message.answer("Админ-панель", reply_markup=keyboards.admin_panel)
 
@@ -58,24 +85,22 @@ async def clear_db(message: types.Message) -> None:
 		await message.answer("База данных почищена!")
 
 
-# TODO: add a function for cleaning cache (and add cache)
 @dp.message_handler(text=("Очистить кэш расписаний"))
-async def clear_db(message: types.Message) -> None:
+async def clear_timetable_cache(message: types.Message) -> None:
 	if is_admin(message.from_user.id):
-		await message.answer("Данная функция не реализована.")
+		timetable.cacher.reset_global_cache()
 
 
 @dp.message_handler(text=("В меню"))
-async def clear_db(message: types.Message) -> None:
+async def back_to_menu(message: types.Message) -> None:
 	if is_admin(message.from_user.id):
-		await message.answer("Меню", reply_markup=keyboards.admin_menu_board)
-
-
+		await message.answer("Меню", reply_markup=keyboards.admin_menu_board) 
 # endregion -- ADMIN
 
 
 # region    -- Usport
 @dp.message_handler(text=emojize("Отметиться на физру :person_cartwheeling:"))
+@update_interaction_time
 async def pe_qr(message: types.Message) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
 
@@ -105,6 +130,7 @@ async def timetable_sequence_start(message: types.Message) -> None:
 
 # TODO: student: db.UserModel | None thingy (get_user_if_authenticated) can be handled by a generator?
 @dp.message_handler(text=emojize("Что сегодня? :student:"))
+@update_interaction_time
 async def timetable_today(message: types.Message) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
 	if student is None:
@@ -119,6 +145,7 @@ async def timetable_today(message: types.Message) -> None:
 			await bot.send_photo(chat_id=message.chat.id, photo=img_file)
 
 
+@update_interaction_time
 async def _timetable_week(message: types.Message, target_week_num: int = timetable_parser.WeekNum.CURRENT) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
 	if student is None:
@@ -158,7 +185,7 @@ async def settings(message: types.Message) -> None:
 
 @dp.message_handler(text=emojize("Авторизоваться :rocket:"))
 async def auth(message: types.Message) -> None:
-	if not db.is_authenticated(message.from_user.id):
+	if db.get_user_if_authenticated(message.from_user.id) is None:
 		await UserDataInputState.login.set()
 		await message.answer(
 			"Введите ваш логин для входа на usport.\nПример: NSurname-UG24"
@@ -243,7 +270,6 @@ async def user_support_message(message: types.Message, state: FSMContext) -> Non
 
 
 # region    -- Input profile data
-# TODO: make a logoff handler
 @dp.message_handler(state=UserDataInputState.login)
 async def add_login(message: types.Message, state: FSMContext) -> None:
 	async with state.proxy() as data:
@@ -252,7 +278,6 @@ async def add_login(message: types.Message, state: FSMContext) -> None:
 			await message.answer("Ошибка! Некоректный логин, попробуйте снова")
 			return
 
-		db.from_sfu_login(message.from_user.id, data["login"])
 		await message.answer("Теперь введите название вашей группы\nПример: ВГ24-01Б")
 		await UserDataInputState.next()
 
@@ -267,7 +292,6 @@ async def add_group(message: types.Message, state: FSMContext) -> None:
 			)
 			return
 
-		db.add_group_to(message.from_user.id, data["group"])
 		await message.answer("Введите номер вашей подгруппы (просто число).")
 		await UserDataInputState.next()
 
@@ -282,7 +306,7 @@ async def add_subgroup(message: types.Message, state: FSMContext) -> None:
 			)
 			return
 
-		db.add_subgroup_to(message.from_user.id, data["subgroup"])
+		db.create_or_replace_user(message.from_user.id, data["login"], data["group"], data["subgroup"])
 		await message.answer("Вы авторизованы!", reply_markup=keyboards.menu_board)
 		await state.finish()
 # endregion -- Input profile data

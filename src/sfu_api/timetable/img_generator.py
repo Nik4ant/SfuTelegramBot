@@ -34,8 +34,12 @@ LESSON_TYPE_COLORS = {
 FONT_PATH: str = os.path.join(IMG_ASSETS_DIR, "Roboto-Medium.ttf")
 PLACEHOLDER_IMG_LIGHT: str = os.path.join(IMG_ASSETS_DIR, "default_img_light.png")
 PLACEHOLDER_IMG_DARK: str = os.path.join(IMG_ASSETS_DIR, "default_img_dark.png")
+# Base/Initial vertical offset
 BASE_HEIGHT: int = 32
+# Base/Initial horizontal offset
 BASE_WIDTH: int = 5
+# Max length for text (in columns) before wrapping (see textwrap.wrap)
+MAX_WIDTH_COLUMNS: int = 48
 OFFSET_BETWEEN_LESSONS: int = 24
 # Offset between lesson's "parts" (rows): name, time, location, teacher, etc.
 OFFSET_BETWEEN_ROWS: int = 10
@@ -47,17 +51,18 @@ def _draw_at(drawer: ImageDraw, text: str, font: ImageFont, horizontal_offset: i
 	"""
 	@return: Additional offset based on text size
 	"""
-	# FIXME: textwrap works, but font.getbbox ignores the '\n'
-	# formated_text: str = '\n'.join(textwrap.wrap(text, width=32))
-
+	_lines: list[str] = textwrap.wrap(text, width=MAX_WIDTH_COLUMNS)
+	formatted_text: str = '\n'.join(_lines)
 	# (left, top, right, bottom) bounding box
-	text_bbox: tuple[int, int, int, int] = font.getbbox(text)
+	text_bbox: tuple[int, int, int, int] = font.getbbox(formatted_text)
 
 	drawer.multiline_text(
 		(horizontal_offset, vertical_offset),
-		text, fill=color, anchor="ls", font=font
+		formatted_text, fill=color, anchor="ls", font=font
 	)
-	return abs(text_bbox[0] - text_bbox[2]), abs(text_bbox[1] - text_bbox[3])
+	# Account for text wrapping
+	new_vertical = len(_lines) * abs(text_bbox[1] - text_bbox[3])
+	return abs(text_bbox[0] - text_bbox[2]), new_vertical
 
 
 def _gen_day(day: list[Lesson], day_num: int, file_path: str, dark_theme: bool) -> None:
@@ -70,8 +75,8 @@ def _gen_day(day: list[Lesson], day_num: int, file_path: str, dark_theme: bool) 
 	height: int = round((BASE_HEIGHT + OFFSET_BETWEEN_LESSONS + OFFSET_BETWEEN_ROWS * EXPECTED_ROWS_PER_LESSON) * 1.5 * len(day))
 	im = Image.new(
 		"RGB",
-		# ...Good enough...
-		(1080, height),
+		# Width can be a constant value thanks to text wrapping
+		(16 * MAX_WIDTH_COLUMNS, height),
 		schema["bg"]
 	)
 	dr = ImageDraw.Draw(im)
