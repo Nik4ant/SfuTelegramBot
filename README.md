@@ -1,23 +1,11 @@
 # SfuTelegramBot
 To-Do: описание
 
-# Global To-Do list:
-- убрать это отсюда в пользу нормальной todo'шки
-- СФУ межнациональный университет, поэтому в боте должны присутствовать локализации
-(т.е. поддержка нескольких языков). Для этого в python есть модуль [gettext](https://docs.python.org/3/library/gettext.html).
-На начальном этапе на это можно подзабить:
-   - https://habr.com/ru/articles/73554/
-   - https://phrase.com/blog/posts/translate-python-gnu-gettext/
-- описание проекта
-- Github actions? (CI-CD и всё такое...)
-- Найти хостинг (беслпатно-платный)
-- нормальная структура импортов?
-
 # Инструкции
 ## Как начать
 0) Установлен Python версии 3.11.x
 1) Установить [pdm](https://github.com/pdm-project/pdm?tab=readme-ov-file#installation)
-выполнив команду в powershell: 
+выполнив команду в powershell (для Windows, если пользуетесь Linux'ом, то вряд ли вам нужна эта инструкция...): 
 ```
 (Invoke-WebRequest -Uri https://pdm-project.org/install-pdm.py -UseBasicParsing).Content | python -
 ```
@@ -39,6 +27,3 @@ TELEGRAM_TOKEN={{token}}
 - `pdm run format`: форматирует код проекта, чтобы соблюдать стилистику и всё такое...
 - `pdm run lint`: сканирует код проекта, чтобы найти какие-либо стилистические, типовые (т.е. проверяет типы) и прочие ошибки
 - Если нужно добавить какую-то стороннюю библиотеку, то вместо привычного `pip install` нужно использовать: `pdm add {{имя_пакета}}`
-
-# Структура проекта
-To-Do: описание структуры проекта к тому моменту, когда она будет закончена
