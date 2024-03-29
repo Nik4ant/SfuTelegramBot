@@ -9,6 +9,10 @@ To-Do: описание
 ```
 (Invoke-WebRequest -Uri https://pdm-project.org/install-pdm.py -UseBasicParsing).Content | python -
 ```
+или
+```
+pip install pdm
+```
 2) *Скачать* проект:
    - Зайти в желаемую папку и выполнить команду: ```git clone https://github.com/Nik4ant/SfuTelegramBot.git```
    - Затем: `cd SfuTelegramBot`
