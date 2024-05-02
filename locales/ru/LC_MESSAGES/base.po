@@ -1,0 +1,150 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2024-05-02 08:45+0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=cp1251\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: src/bot\app\keyboards.py:25 src/bot\app\keyboards.py:30
+msgid "Расписание"
+msgstr "Расписание"
+
+#: src/bot\app\keyboards.py:25 src/bot\app\keyboards.py:30
+msgid "Что сегодня?"
+msgstr "Что сегодня?"
+
+#: src/bot\app\keyboards.py:26 src/bot\app\keyboards.py:31
+msgid "Отметиться на физру"
+msgstr "Отметиться на физру"
+
+#: src/bot\app\keyboards.py:27 src/bot\app\keyboards.py:32
+msgid "Настройки/Settings"
+msgstr "Настройки/Settings"
+
+#: src/bot\app\keyboards.py:33 src/bot\telegram.py:84
+msgid "Админ-панель"
+msgstr "Админ-панель"
+
+#: src/bot\app\keyboards.py:37
+msgid "Авторизоваться"
+msgstr "Авторизоваться"
+
+#: src/bot\app\keyboards.py:37
+msgid "Написать в поддержку"
+msgstr "Написать в поддержку"
+
+#: src/bot\app\keyboards.py:39
+msgid "Выбрать язык / Choose language"
+msgstr "Выбрать язык / Choose language"
+
+#: src/bot\app\keyboards.py:40 src/bot\app\keyboards.py:52
+#: src/bot\app\keyboards.py:56
+msgid "Назад"
+msgstr "Назад"
+
+#: src/bot\app\keyboards.py:46
+msgid "Очистить кэш расписаний"
+msgstr "Очистить кэш расписаний"
+
+#: src/bot\app\keyboards.py:46
+msgid "Почистить бд"
+msgstr "Почистить бд"
+
+#: src/bot\app\keyboards.py:47
+msgid "В меню"
+msgstr "В меню"
+
+#: src/bot\app\keyboards.py:50
+msgid "Эта неделя"
+msgstr "Эта неделя"
+
+#: src/bot\app\keyboards.py:51
+msgid "Нечетная неделя"
+msgstr "Нечетная неделя"
+
+#: src/bot\app\keyboards.py:51
+msgid "Четная неделя"
+msgstr "Четная неделя"
+
+#: src/bot\app\keyboards.py:55
+msgid "Перезайти"
+msgstr "Перезайти"
+
+#: src/bot\telegram.py:45
+msgid "Добро пожаловать, "
+msgstr "Добро пожаловать, "
+
+#: src/bot\telegram.py:50
+msgid "Добро пожаловать, авторизуйтесь для начала работы."
+msgstr "Добро пожаловать, авторизуйтесь для начала работы."
+
+#: src/bot\telegram.py:91
+msgid "База данных почищена"
+msgstr "База данных почищена"
+
+#: src/bot\telegram.py:103
+msgid "Меню"
+msgstr "Меню"
+
+#: src/bot\telegram.py:115 src/bot\telegram.py:144 src/bot\telegram.py:159
+msgid "Ошибка! Вы не авторизовались"
+msgstr "Ошибка! Вы не авторизовались"
+
+#: src/bot\telegram.py:123
+msgid "Возникла ошибка. Проверьте входные данные или обратитесь в поддержку."
+msgstr "Возникла ошибка. Проверьте входные данные или обратитесь в поддержку."
+
+#: src/bot\telegram.py:135
+msgid "Выберите неделю."
+msgstr "Выберите неделю."
+
+#: src/bot\telegram.py:149 src/bot\telegram.py:164
+msgid "Что-то пошло не так. Попробуйте позже или напишите в поддержку"
+msgstr "Что-то пошло не так. Попробуйте позже или напишите в поддержку"
+
+#: src/bot\telegram.py:277
+msgid "Ваше обращение принято"
+msgstr "Ваше обращение принято"
+
+#: src/bot\telegram.py:286
+msgid "Ошибка! Некоректный логин, попробуйте снова"
+msgstr "Ошибка! Некоректный логин, попробуйте снова"
+
+#: src/bot\telegram.py:289
+msgid ""
+"Теперь введите название вашей группы\n"
+"Пример: ВГ24-01Б"
+msgstr ""
+"Теперь введите название вашей группы\n"
+"Пример: ВГ24-01Б"
+
+#: src/bot\telegram.py:299
+msgid ""
+"Ошибка! Некоректная группа, попробуйте снова\n"
+"(Образец: ВГ23-01Б)"
+msgstr ""
+"Ошибка! Некоректная группа, попробуйте снова\n"
+"(Образец: ВГ23-01Б)"
+
+#: src/bot\telegram.py:303
+msgid "Введите номер вашей подгруппы (просто число)."
+msgstr "Введите номер вашей подгруппы (просто число)."
+
+#: src/bot\telegram.py:313
+msgid "Ошибка! Подгруппа должна быть числом, попробуйте снова"
+msgstr "Ошибка! Подгруппа должна быть числом, попробуйте снова"
+
+#: src/bot\telegram.py:318
+msgid "Вы авторизованы!"
+msgstr "Вы авторизованы!"
+

@@ -5,6 +5,7 @@ from typing import Callable, Any
 import aiogram.utils.exceptions as exceptions
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.contrib.middlewares.i18n import I18nMiddleware
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from emoji import emojize
@@ -14,12 +15,16 @@ from sfu_api import timetable, usport
 from sfu_api.timetable import parser as timetable_parser
 from bot import support
 from bot.app import keyboards
-from config import ADMIN_ID, TELEGRAM_TOKEN
+from config import ADMIN_ID, TELEGRAM_TOKEN, I18N_DOMAIN, I18N_LOCALES_DIR
 from validation import *
 
 
 bot: Bot = Bot(token=TELEGRAM_TOKEN)
 dp: Dispatcher = Dispatcher(bot, storage=MemoryStorage())
+
+i18n = I18nMiddleware(I18N_DOMAIN, I18N_LOCALES_DIR)
+dp.setup_middleware(i18n)
+_ = i18n.gettext  # alias for translating text
 
 
 class UserDataInputState(StatesGroup):
@@ -34,14 +39,15 @@ class SupportMessageInput(StatesGroup):
 
 @dp.message_handler(commands=["start"])
 async def send_welcome(message: types.Message) -> None:
+	print(repr(message.from_user.locale))
 	if is_admin(message.from_user.id):
 		await message.reply(
-			f"Добро пожаловать, {message.from_user.first_name}!",
+			_("Добро пожаловать, ", locale="en") + message.from_user.first_name + '!',
 			reply_markup=keyboards.admin_menu_board,
 		)
 	else:
 		await message.reply(
-			"Добро пожаловать, авторизуйтесь для начала работы.",
+			_("Добро пожаловать, авторизуйтесь для начала работы."),
 			reply_markup=keyboards.menu_board,
 		)
 
@@ -75,14 +81,14 @@ def update_interaction_time(func: Callable) -> Any:
 @dp.message_handler(text=("Админ-панель"))
 async def admin_panes(message: types.Message) -> None:
 	if is_admin(message.from_user.id):
-		await message.answer("Админ-панель", reply_markup=keyboards.admin_panel)
+		await message.answer(_("Админ-панель"), reply_markup=keyboards.admin_panel)
 
 
 @dp.message_handler(text=("Почистить бд"))
 async def clear_db(message: types.Message) -> None:
 	if is_admin(message.from_user.id):
 		db.remove_old_profiles()
-		await message.answer("База данных почищена!")
+		await message.answer(_("База данных почищена") + '!')
 
 
 @dp.message_handler(text=("Очистить кэш расписаний"))
@@ -94,7 +100,8 @@ async def clear_timetable_cache(message: types.Message) -> None:
 @dp.message_handler(text=("В меню"))
 async def back_to_menu(message: types.Message) -> None:
 	if is_admin(message.from_user.id):
-		await message.answer("Меню", reply_markup=keyboards.admin_menu_board) 
+		await message.answer(_("Меню"), reply_markup=keyboards.admin_menu_board)
+
 # endregion -- ADMIN
 
 
@@ -105,7 +112,7 @@ async def pe_qr(message: types.Message) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
 
 	if student is None:
-		await message.answer("Ошибка! Вы не авторизовались")
+		await message.answer(_("Ошибка! Вы не авторизовались"))
 	else:
 		try:
 			await bot.send_photo(
@@ -113,7 +120,7 @@ async def pe_qr(message: types.Message) -> None:
 			)
 		except exceptions.WrongFileIdentifier as err:
 			await message.answer(
-				"Возникла ошибка. Проверьте входные данные или обратитесь в поддержку."
+				_("Возникла ошибка. Проверьте входные данные или обратитесь в поддержку.")
 			)
 			logging.exception(
 				"There is an error in receiving the photo. Maybe the user's fault.",
@@ -125,7 +132,7 @@ async def pe_qr(message: types.Message) -> None:
 # region    -- Timetable
 @dp.message_handler(text=emojize("Расписание :teacher:"))
 async def timetable_sequence_start(message: types.Message) -> None:
-	await message.answer("Выберите неделю.", reply_markup=keyboards.timetable_board)
+	await message.answer(_("Выберите неделю."), reply_markup=keyboards.timetable_board)
 
 
 # TODO: student: db.UserModel | None thingy (get_user_if_authenticated) can be handled by a generator?
@@ -134,12 +141,12 @@ async def timetable_sequence_start(message: types.Message) -> None:
 async def timetable_today(message: types.Message) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
 	if student is None:
-		await message.answer("Ошибка! Вы не авторизовались")
+		await message.answer(_("Ошибка! Вы не авторизовались"))
 		return
 
 	img_path: str | None = await timetable_parser.parse_today(student.group_name, student.subgroup)
 	if img_path is None:
-		await message.answer("Что-то пошло не так. Попробуйте позже или напишите в поддержку :()")
+		await message.answer(_("Что-то пошло не так. Попробуйте позже или напишите в поддержку") + ":()")
 	else:
 		with open(img_path, mode="rb") as img_file:
 			await bot.send_photo(chat_id=message.chat.id, photo=img_file)
@@ -149,16 +156,15 @@ async def timetable_today(message: types.Message) -> None:
 async def _timetable_week(message: types.Message, target_week_num: int = timetable_parser.WeekNum.CURRENT) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
 	if student is None:
-		await message.answer("Ошибка! Вы не авторизовались")
+		await message.answer(_("Ошибка! Вы не авторизовались"))
 		return
 
-	img_paths: list[str] | None = await timetable_parser.parse_week(student.group_name, student.subgroup, target_week_num)
-	if img_paths is None:
-		await message.answer("Что-то пошло не так. Попробуйте позже или напишите в поддержку :()")
+	img_path: str | None = await timetable_parser.parse_week(student.group_name, student.subgroup, target_week_num)
+	if img_path is None:
+		await message.answer(_("Что-то пошло не так. Попробуйте позже или напишите в поддержку") + ":()")
 	else:
-		for img_path in img_paths:
-			with open(img_path, mode="rb") as img_file:
-				await bot.send_photo(chat_id=message.chat.id, photo=img_file)
+		with open(img_path, mode="rb") as img_file:
+			await bot.send_photo(chat_id=message.chat.id, photo=img_file)
 
 
 @dp.message_handler(text="Эта неделя")
@@ -212,11 +218,13 @@ async def ru_lang(message: types.Message) -> None:
 			"The language has been changed to Russian",
 			reply_markup=keyboards.admin_menu_board,
 		)
+		i18n.reload()
 	else:
 		await message.answer(
 			"The language has been changed to Russian",
 			reply_markup=keyboards.menu_board,
 		)
+	keyboards.reload(_)
 
 
 @dp.message_handler(text=("EN"))
@@ -266,7 +274,7 @@ async def user_support_message(message: types.Message, state: FSMContext) -> Non
 			await support.send_message(data["user_message"])
 
 	await state.finish()
-	await message.answer("Ваше обращение принято!")
+	await message.answer(_("Ваше обращение принято") + '!')
 
 
 # region    -- Input profile data
@@ -275,10 +283,10 @@ async def add_login(message: types.Message, state: FSMContext) -> None:
 	async with state.proxy() as data:
 		data["login"] = format_sfu_login(message.text)
 		if not data["login"]:
-			await message.answer("Ошибка! Некоректный логин, попробуйте снова")
+			await message.answer(_("Ошибка! Некоректный логин, попробуйте снова"))
 			return
 
-		await message.answer("Теперь введите название вашей группы\nПример: ВГ24-01Б")
+		await message.answer(_("Теперь введите название вашей группы\nПример: ВГ24-01Б"))
 		await UserDataInputState.next()
 
 
@@ -288,11 +296,11 @@ async def add_group(message: types.Message, state: FSMContext) -> None:
 		data["group"] = sanitize_str(message.text)
 		if not data["group"]:
 			await message.answer(
-				"Ошибка! Некоректная группа, попробуйте снова\n(Образец: ВГ23-01Б)"
+				_("Ошибка! Некоректная группа, попробуйте снова\n(Образец: ВГ23-01Б)")
 			)
 			return
 
-		await message.answer("Введите номер вашей подгруппы (просто число).")
+		await message.answer(_("Введите номер вашей подгруппы (просто число)."))
 		await UserDataInputState.next()
 
 
@@ -302,18 +310,19 @@ async def add_subgroup(message: types.Message, state: FSMContext) -> None:
 		data["subgroup"] = sanitize_str(message.text)
 		if not data["subgroup"].isnumeric():
 			await message.answer(
-				"Ошибка! Подгруппа должна быть числом, попробуйте снова"
+				_("Ошибка! Подгруппа должна быть числом, попробуйте снова")
 			)
 			return
 
 		db.create_or_replace_user(message.from_user.id, data["login"], data["group"], data["subgroup"])
-		await message.answer("Вы авторизованы!", reply_markup=keyboards.menu_board)
+		await message.answer(_("Вы авторизованы!"), reply_markup=keyboards.menu_board)
 		await state.finish()
 # endregion -- Input profile data
 
 
 def start() -> None:
 	executor.start_polling(dp)
+	keyboards.reload(_)
 
 
 async def close() -> None:

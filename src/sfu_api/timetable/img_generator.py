@@ -3,6 +3,7 @@ import logging
 import textwrap
 
 from PIL import Image, ImageDraw, ImageFont
+from PIL.Image import Image as ImageType
 
 from .common import *
 
@@ -47,6 +48,29 @@ EXPECTED_ROWS_PER_LESSON: int = 5
 
 
 # region   -- Drawing
+def _concat_images(images_paths: list[str], dark_theme: bool) -> ImageType:
+	images: list[ImageType] = [Image.open(path) for path in images_paths]
+	# region Size
+	max_width = 0
+	total_height = 0
+	for image in images:
+		image: ImageType
+		total_height += image.height
+		if image.width > max_width:
+			max_width = image.width
+	# endregion
+
+	bg_color: str = (COLOR_SCHEMA["dark"] if dark_theme else COLOR_SCHEMA["light"])["bg"]
+	target: ImageType = Image.new("RGB", (max_width, total_height), bg_color)
+
+	v_offset: int = 0
+	for i in range(len(images)):
+		target.paste(images[i], (0, v_offset))
+		v_offset += images[i].height
+
+	return target
+
+
 def _draw_at(drawer: ImageDraw, text: str, font: ImageFont, horizontal_offset: int, vertical_offset: int, color) -> tuple[int, int]:
 	"""
 	@return: Additional offset based on text size
@@ -122,19 +146,28 @@ def generate_day(day: Day, dark_theme: bool = True) -> str:
 	if day.day_num == 6 or len(day.lessons) == 0:
 		return PLACEHOLDER_IMG_DARK if dark_theme else PLACEHOLDER_IMG_LIGHT
 	
-	light_theme_img: str = _file_path_for(day.for_group, day.for_subgroup, day.week_num, day.day_num, False)
-	dark_theme_img: str = _file_path_for(day.for_group, day.for_subgroup, day.week_num, day.day_num, True)
+	light_theme_img: str = _filename_for_day(day.for_group, day.for_subgroup, day.week_num, day.day_num, False)
+	dark_theme_img: str = _filename_for_day(day.for_group, day.for_subgroup, day.week_num, day.day_num, True)
 	# Generate both dark and light theme variants
 	_gen_day(day.lessons, day.day_num, light_theme_img, False)
 	_gen_day(day.lessons, day.day_num, dark_theme_img, True)
 	# However can't return path to both variants!
 	return dark_theme_img if dark_theme else light_theme_img
+
+
+def generate_week(days: list[Day], dark_theme: bool = True) -> str:
+	images: list[str] = [generate_day(day, dark_theme) for day in days]
+
+	path: str = _filename_for_week(days[0].for_group, days[0].for_subgroup, days[0].week_num, dark_theme)
+	week_image: ImageType = _concat_images(images, dark_theme)
+	week_image.save(path)
+	return path
 # endregion
 
 
 # region   -- API
 def get_day_image(group: str, subgroup: str, week_num: int, day_index: int, dark_theme: bool = True) -> str:
-	path: str = _file_path_for(group, subgroup, week_num, day_index, dark_theme)
+	path: str = _filename_for_day(group, subgroup, week_num, day_index, dark_theme)
 	if os.path.isfile(path):
 		return path
 
@@ -146,9 +179,15 @@ def get_week_images(group: str, subgroup: str, week_num: int, dark_theme: bool =
 # endregion
 
 
-def _file_path_for(group: str, subgroup: str, week_num: int, day_index: int, dark_theme: bool) -> str:
+def _filename_for_day(group: str, subgroup: str, week_num: int, day_index: int, dark_theme: bool) -> str:
 	return os.path.join(
-		IMG_OUTPUT_DIR, f"{group}_{subgroup}_{day_index}_{week_num}"
+		IMG_OUTPUT_DIR, f"DAY_{group}_{subgroup}_{day_index}_{week_num}_"
+	) + ("dark" if dark_theme else "light") + ".png"
+
+
+def _filename_for_week(group: str, subgroup: str, week_num: int, dark_theme: bool) -> str:
+	return os.path.join(
+		IMG_OUTPUT_DIR, f"WEEK_{group}_{subgroup}_{week_num}_"
 	) + ("dark" if dark_theme else "light") + ".png"
 
 

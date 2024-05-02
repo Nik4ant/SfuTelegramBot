@@ -1,3 +1,5 @@
+import logging
+
 import aiohttp
 from urllib import parse
 
@@ -7,7 +9,7 @@ from config import SFU_UNI_TIMEZONE
 
 
 BASE_URL = "https://edu.sfu-kras.ru/api/timetable/get"
-# NOTE: Apparently Sfu api HAS 2 DIFFERENT URL VARIANTS FOR THE SAME ENDPOINT?!?!
+# NOTE: Apparently Sfu api HAS 2 DIFFERENT URL VARIANTS FOR THE SAME ENDPOINT?!?! (screw you "edu.sfu-kras.ru/api")
 # O_o. If something goes wrong, there is a chance that it's another url variant -_-
 URL_VARIANTS: list[str] = [
 	BASE_URL + "?target={group_name} ({subgroup_name} подгруппа)",
@@ -52,11 +54,11 @@ async def parse_today(group_name: str, subgroup_name: str) -> str | None:
 
 async def parse_week(
 	group_name: str, subgroup_name: str, force_target_week_num: WeekNum = WeekNum.CURRENT
-) -> list[str] | None:
+) -> str | None:
 	"""
 	Parses timetable for current/specified week.
 	@param force_target_week_num: Optional week number (See enum in common.py)
-	@return: Path to generated images; None - if something went wrong
+	@return: Path to generated image; None - if something went wrong
 	"""
 	result: list[Day] = []
 
@@ -66,13 +68,9 @@ async def parse_week(
 		target_week_num = str(_get_week_num(datetime.now(SFU_UNI_TIMEZONE)))
 	else:
 		target_week_num = str(int(force_target_week_num))
-	
-	# NOTE: Thanks to cacher.put_day cache_data can contain any number of days.
-	# Since there is no way to check how many days are suppose to be there
-	# cache_data is used only if all 6 days are present
-	# (Not ideal, but still better than returing wrong data)
-	cache_data: list[str] | None = cacher.try_get_week(group_name, subgroup_name, int(target_week_num))
-	if cache_data is not None and len(cache_data) == 6:
+
+	cache_data: str | None = cacher.try_get_week(group_name, subgroup_name, int(target_week_num))
+	if cache_data is not None:
 		return cache_data
 
 	json: dict | None = await _get_timetable_json_for(group_name, subgroup_name)

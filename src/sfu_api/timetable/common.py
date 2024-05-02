@@ -82,4 +82,4 @@ def day_num_to_str(num: int) -> str:
 		case 6:
 			return "Воскресенье"
 		case _:
-			return "(ошибка!!)"
+			return "(ошибка!)"
