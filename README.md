@@ -27,6 +27,7 @@ TELEGRAM_TOKEN={{token}}
 ## i18n
 Для генерации файлов локали в корневой папке проекта:
 `python "/path/to/i18n/tool/in/python/pygettext.py" -d base -o locales/base.pot src/`
+`python "/path/to/i18n/tools/in/python/i18n.py" -d base -o locales/base.pot src/`
 
 ## Как пользоваться
 В проекте используется специальная утилита [pdm](https://pdm-project.org/latest/), основные команды, которые надо знать:
