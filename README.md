@@ -5,13 +5,17 @@ To-Do: описание
 ## Как начать
 0) Установлен Python версии 3.11.x
 1) Установить [pdm](https://github.com/pdm-project/pdm?tab=readme-ov-file#installation)
-выполнив команду в powershell (для Windows, если пользуетесь Linux'ом, то вряд ли вам нужна эта инструкция...): 
+Для Windows в powershell: 
 ```
 (Invoke-WebRequest -Uri https://pdm-project.org/install-pdm.py -UseBasicParsing).Content | python -
 ```
 или
 ```
 pip install pdm
+```
+Для Linux: 
+```
+curl -sSL https://pdm-project.org/install-pdm.py | python3 -
 ```
 2) *Скачать* проект:
    - Зайти в желаемую папку и выполнить команду: ```git clone https://github.com/Nik4ant/SfuTelegramBot.git```
