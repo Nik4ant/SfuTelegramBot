@@ -1,56 +1,157 @@
-from aiogram.types import ReplyKeyboardMarkup
+from typing import Callable
+from enum import Enum
+
+from config import SUPPORTED_LANGUAGES
+from .callbacks import *
+
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from emoji import emojize
 
 
-menu_board = ReplyKeyboardMarkup(resize_keyboard=True)
-admin_menu_board = ReplyKeyboardMarkup(resize_keyboard=True)
-settings_board = ReplyKeyboardMarkup(resize_keyboard=True)
-choose_language_board = ReplyKeyboardMarkup(resize_keyboard=True)
-admin_panel = ReplyKeyboardMarkup(resize_keyboard=True)
-timetable_board = ReplyKeyboardMarkup(resize_keyboard=True)
-logoff_choice_board = ReplyKeyboardMarkup(resize_keyboard=True)
+# region Keyboards
+class Keyboard(Enum):
+    MENU = 1
+    ADMIN_MENU = 2
+    ADMIN_PANEL = 4
+    SETTINGS = 8
+    LANGUAGE_SELECT = 16
+    TIMETABLE = 32
+    LOGOFF = 64
 
 
-def reload(_, lang: str = "ru") -> None:
-    """
-    Reloads all keyboards based on given translate (gettext) function
-    @param _: Alias for gettext
-    """
-    # NOTE: YES! It's bad to change a ton of global objects, but that the whole point - reset every keyboard
-    # TODO: test if this global really necessary (try without it and see if it works)
-    global menu_board, admin_menu_board, settings_board, \
-        choose_language_board, admin_panel, timetable_board, logoff_choice_board
+# Contains translated variants of all available keyboards
+# (see init below)
+_KEYBOARDS: dict[Keyboard, dict[str, InlineKeyboardMarkup]] = {
+    Keyboard.MENU: {},
+    Keyboard.ADMIN_MENU: {},
+    Keyboard.ADMIN_PANEL: {},
+    Keyboard.SETTINGS: {},
+    Keyboard.LANGUAGE_SELECT: {},
+    Keyboard.TIMETABLE: {},
+    Keyboard.LOGOFF: {},
+}
+# endregion
 
-    menu_board.clean()
-    menu_board.row(_("Что сегодня?", locale=lang) + emojize(" :student:"), _("Расписание", locale=lang) + emojize(" :teacher:"))
-    menu_board.row(_("Отметиться на физру", locale=lang) + emojize(" :person_cartwheeling:"))
-    menu_board.row(_("Настройки/Settings", locale=lang) + emojize(" :gear:"))
 
-    admin_menu_board.clean()
-    admin_menu_board.row(_("Что сегодня?", locale=lang) + emojize(" :student:"), _("Расписание", locale=lang) + emojize(" :teacher:"))
-    admin_menu_board.row(_("Отметиться на физру", locale=lang) + emojize(" :person_cartwheeling:"))
-    admin_menu_board.row(_("Настройки/Settings", locale=lang) + emojize(" :gear:"))
-    admin_menu_board.row(_("Админ-панель", locale=lang))
+def get(keyboard_type: Keyboard, lang: str) -> InlineKeyboardMarkup | None:
+    return _KEYBOARDS.get(keyboard_type, {}).get(lang, None)
 
-    settings_board.clean()
-    settings_board.row(
-        _("Авторизоваться", locale=lang) + emojize(" :rocket:"), _("Написать в поддержку", locale=lang) + emojize(" :ambulance:")
-    )
-    settings_board.row(_("Выбрать язык / Choose language", locale=lang))
-    settings_board.row(_("Назад", locale=lang))
 
-    choose_language_board.clean()
-    choose_language_board.row("RU", "EN")
+# Must be called only once!
+def init(_: Callable) -> None:
+    for code in SUPPORTED_LANGUAGES:
+        lang: str = code.lower()
+        # region Keyboard.MENU + Keyboard.ADMIN_MENU
+        menu_keyboard: InlineKeyboardMarkup = InlineKeyboardMarkup(row_width=2)
+        admin_menu_keyboard: InlineKeyboardMarkup = InlineKeyboardMarkup(row_width=2)
 
-    admin_panel.clean()
-    admin_panel.row(_("Почистить бд", locale=lang), _("Очистить кэш расписаний", locale=lang))
-    admin_panel.row(_("В меню", locale=lang))
+        _btn_today = InlineKeyboardButton(
+            text=_("Что сегодня?", locale=lang) + emojize(" :student:"), callback_data=CALLBACK_TIMETABLE_TODAY
+        )
+        admin_menu_keyboard.add(_btn_today)
+        menu_keyboard.add(_btn_today)
 
-    timetable_board.clean()
-    timetable_board.row(_("Эта неделя", locale=lang))
-    timetable_board.row(_("Четная неделя", locale=lang), _("Нечетная неделя", locale=lang))
-    timetable_board.row(_("Назад", locale=lang))
+        _btn_tomorrow = InlineKeyboardButton(
+            text=_("Что завтра?", locale=lang) + emojize(" :student:"), callback_data=CALLBACK_TIMETABLE_TOMORROW
+        )
+        menu_keyboard.add(_btn_tomorrow)
+        admin_menu_keyboard.add(_btn_tomorrow)
 
-    logoff_choice_board.clean()
-    logoff_choice_board.row(_("Перезайти", locale=lang))
-    logoff_choice_board.row(_("Назад", locale=lang))
+        _btn_timetable = InlineKeyboardButton(
+            text=_("Расписание", locale=lang) + emojize(" :teacher:"), callback_data=CALLBACK_TIMETABLE_GENERAL
+        )
+        menu_keyboard.add(_btn_timetable)
+        admin_menu_keyboard.add(_btn_timetable)
+
+        _btn_pe_qr = InlineKeyboardButton(
+            text=_("Отметиться на физру", locale=lang) + emojize(" :person_cartwheeling:"), callback_data=CALLBACK_PE_QR
+        )
+        menu_keyboard.add(_btn_pe_qr)
+        admin_menu_keyboard.add(_btn_pe_qr)
+
+        _btn_settings = InlineKeyboardButton(
+            text=_("Настройки/Settings", locale=lang) + emojize(" :gear:"), callback_data=CALLBACK_SETTINGS
+        )
+        menu_keyboard.add(_btn_settings)
+        admin_menu_keyboard.add(_btn_settings)
+
+        admin_menu_keyboard.add(
+            InlineKeyboardButton(
+                text=_("Админ-панель", locale=lang), callback_data=CALLBACK_ADMIN_PANEL
+            )
+        )
+
+        _KEYBOARDS[Keyboard.MENU][lang] = menu_keyboard
+        _KEYBOARDS[Keyboard.ADMIN_MENU][lang] = admin_menu_keyboard
+        # endregion
+
+        # region Keyboard.SETTINGS
+        settings_keyboard = InlineKeyboardMarkup(row_width=2)
+        settings_keyboard.add(InlineKeyboardButton(
+            text=_("Авторизоваться/Перезайти", locale=lang) + emojize(" :rocket:"), callback_data=CALLBACK_AUTH
+        ))
+        settings_keyboard.add(InlineKeyboardButton(
+            text=_("Написать в поддержку", locale=lang) + emojize(" :ambulance:"), callback_data=CALLBACK_SUPPORT
+        ))
+        settings_keyboard.add(InlineKeyboardButton(
+            text=_("Выбрать язык / Choose language", locale=lang), callback_data=CALLBACK_SELECT_LANG
+        ))
+        settings_keyboard.row(InlineKeyboardButton(
+            text=_("В меню", locale=lang), callback_data=CALLBACK_TO_MENU
+        ))
+        _KEYBOARDS[Keyboard.SETTINGS][lang] = settings_keyboard
+        # endregion
+
+        # region Keyboard.LANGUAGE_SELECT
+        # Always the same...
+        language_select_keyboard = InlineKeyboardMarkup(row_width=2)
+        language_select_keyboard.add(InlineKeyboardButton(
+            text="RU", callback_data=CALLBACK_SELECT_RU
+        ))
+        language_select_keyboard.add(InlineKeyboardButton(
+            text="EN", callback_data=CALLBACK_SELECT_EN
+        ))
+        _KEYBOARDS[Keyboard.LANGUAGE_SELECT][lang] = language_select_keyboard
+        # endregion
+
+        # region Keyboard.ADMIN_PANEL
+        admin_panel_keyboard = InlineKeyboardMarkup(row_width=2)
+        admin_panel_keyboard.add(InlineKeyboardButton(
+            text=_("Почистить бд", locale=lang), callback_data=CALLBACK_DB_GC
+        ))
+        admin_panel_keyboard.add(InlineKeyboardButton(
+            text=_("Очистить кэш расписаний", locale=lang), callback_data=CALLBACK_CLEAR_TIMETABLE_CACHE
+        ))
+        admin_panel_keyboard.row(InlineKeyboardButton(
+            text=_("В меню", locale=lang), callback_data=CALLBACK_TO_MENU
+        ))
+        _KEYBOARDS[Keyboard.ADMIN_PANEL][lang] = admin_panel_keyboard
+        # endregion
+
+        # region Keyboard.TIMETABLE
+        timetable_keyboard = InlineKeyboardMarkup(row_width=2)
+        timetable_keyboard.row(InlineKeyboardButton(
+            text=_("Эта неделя", locale=lang), callback_data=CALLBACK_THIS_WEEK
+        ))
+        timetable_keyboard.add(InlineKeyboardButton(
+            text=_("Чётная неделя", locale=lang), callback_data=CALLBACK_EVEN_WEEK
+        ))
+        timetable_keyboard.add(InlineKeyboardButton(
+            text=_("Нечётная неделя", locale=lang), callback_data=CALLBACK_ODD_WEEK
+        ))
+        admin_panel_keyboard.row(InlineKeyboardButton(
+            text=_("В меню", locale=lang), callback_data=CALLBACK_TO_MENU
+        ))
+        _KEYBOARDS[Keyboard.TIMETABLE][lang] = timetable_keyboard
+        # endregion
+
+        # region Keyboard.LOGOFF
+        logoff_keyboard = InlineKeyboardMarkup()
+        logoff_keyboard.row(InlineKeyboardButton(
+            text=_("Перезайти", locale=lang), callback_data=CALLBACK_AUTH
+        ))
+        logoff_keyboard.row(InlineKeyboardButton(
+            text=_("В меню", locale=lang), callback_data=CALLBACK_TO_MENU
+        ))
+        _KEYBOARDS[Keyboard.LOGOFF][lang] = logoff_keyboard
+        # endregion

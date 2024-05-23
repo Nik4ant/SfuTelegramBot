@@ -1,6 +1,6 @@
 from aiogram import Bot, Dispatcher, executor, types
 
-from config import ADMIN_ID, TELEGRAM_SUPPORT_TOKEN
+from config import ADMIN_IDS, TELEGRAM_SUPPORT_TOKEN
 from validation import is_admin
 
 
@@ -15,7 +15,7 @@ async def send_welcome(message: types.Message) -> None:
 
 
 async def send_message(message) -> None:
-    await bot.send_message(ADMIN_ID, message)
+    await bot.send_message(str(ADMIN_IDS), message)
 
 
 def start() -> None:

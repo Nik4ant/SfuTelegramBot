@@ -18,13 +18,14 @@ class UserModel:
 	sfu_login: str = ""
 	group_name: str = ""
 	subgroup: str = ""
+	lang: str = "RU"
 	last_time_interaction: datetime = datetime.now()
 
 	@classmethod
 	def from_db_tuple(cls, data: tuple[Any]) -> Self | None:
-		if len(data) != 5:
+		if len(data) != 6:
 			logging.error(
-				f"UserModel.from_db_tuple(...) was expecting 5 params, but got: {data}"
+				f"UserModel.from_db_tuple(...) was expecting 6 params, but got: {data}"
 			)
 			return None
 		return UserModel(*data)
@@ -40,6 +41,7 @@ def init_db() -> None:
 				sfu_login TEXT,
 				group_name TEXT,
 				subgroup TEXT,
+				lang TEXT,
 				last_time_interaction DATEONLY
 			)"""
 		)
@@ -50,17 +52,18 @@ def init_db() -> None:
 
 
 # region    -- Profiles
-def create_or_replace_user(telegram_id: int, sfu_login: str, group: str, subgroup: str) -> UserModel | None:
+def create_or_replace_user(telegram_id: int, sfu_login: str, group: str, subgroup: str, lang: str) -> UserModel | None:
 	"""@return: Returns None - if error occurred"""
 	try:
 		_now = datetime.now(SFU_UNI_TIMEZONE)
 		cur.execute(
-			"INSERT OR REPLACE INTO profiles VALUES(?, ?, ?, ?, ?)",
+			"INSERT OR REPLACE INTO profiles VALUES(?, ?, ?, ?, ?, ?)",
 			(
 				telegram_id,
 				sfu_login,
 				group,
 				subgroup,
+				lang,
 				_now,
 			),
 		)
@@ -93,6 +96,16 @@ def update_interaction_time_for(telegram_id: int) -> None:
 # endregion -- Profiles
 
 
+def get_lang_for(telegram_id: int) -> str | None:
+	"""@return: Preferred language (if set); None - otherwise"""
+	try:
+		cur.execute("SELECT lang FROM profiles WHERE telegram_id == ?", (telegram_id,))
+		return cur.fetchone()
+	except sql.Error as err:
+		logging.exception(f"SQL error: {err.sqlite_errorname}", exc_info=err)
+		return None
+
+
 # region    -- Search/Delete
 def get_user_if_authenticated(telegram_id: int) -> UserModel | None:
 	"""@return: User only if ALL fields are present; None - otherwise"""
@@ -101,7 +114,7 @@ def get_user_if_authenticated(telegram_id: int) -> UserModel | None:
 		cur.execute("SELECT * FROM profiles WHERE telegram_id == ?", (telegram_id,))
 		data: tuple[Any] | None = cur.fetchone()
 		
-		if data == None:
+		if data is None:
 			return None
 		
 		for part in data:

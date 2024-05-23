@@ -102,9 +102,9 @@ async def parse_week(
 
 
 def _get_week_num(now_datetime: datetime) -> int:
-	if (now_datetime.day // 7) % 2:
-		return int(WeekNum.EVEN)
-	return int(WeekNum.ODD)
+	if (now_datetime.day // 7) % 2 == 1:
+		return int(WeekNum.ODD)
+	return int(WeekNum.EVEN)
 
 
 async def _get_timetable_json_for(group_name: str, subgroup_name: str) -> dict | None:

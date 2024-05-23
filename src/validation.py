@@ -1,9 +1,9 @@
 import bleach
-from config import ADMIN_ID
+from config import ADMIN_IDS
 
 
 def is_admin(telegram_id: int) -> bool:
-    return ADMIN_ID == telegram_id
+    return telegram_id in ADMIN_IDS
 
 
 def format_sfu_login(login: str) -> str:
@@ -16,5 +16,5 @@ def sanitize_str(value: str) -> str:
     return bleach.clean(value, strip=True)
 
 
-def format_message(user_id: int, message: str):
+def format_support_message(user_id: int, message: str):
     return str("USER ID: " + str(user_id) + " MESSAGE: " + message)

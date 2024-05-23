@@ -1,0 +1,173 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-23 18:17+0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/bot/telegram.py:61
+msgid "Добро пожаловать"
+msgstr ""
+
+#: src/bot/telegram.py:66
+msgid "Добро пожаловать, авторизуйтесь для начала работы"
+msgstr ""
+
+#: src/bot/telegram.py:102 src/bot/app/keyboards.py:80
+msgid "Админ-панель"
+msgstr ""
+
+#: src/bot/telegram.py:110
+msgid "База данных почищена"
+msgstr ""
+
+#: src/bot/telegram.py:117
+msgid "Кэш изображений удалён"
+msgstr ""
+
+#: src/bot/telegram.py:128 src/bot/telegram.py:132
+msgid "Меню"
+msgstr ""
+
+#: src/bot/telegram.py:145 src/bot/telegram.py:178 src/bot/telegram.py:196
+msgid "Ошибка! Вы не авторизовались"
+msgstr ""
+
+#: src/bot/telegram.py:154
+msgid "Возникла ошибка. Проверьте входные данные или обратитесь в поддержку"
+msgstr ""
+
+#: src/bot/telegram.py:168
+msgid "Выберите неделю"
+msgstr ""
+
+#: src/bot/telegram.py:185 src/bot/telegram.py:201
+msgid "Что-то пошло не так. Попробуйте позже или напишите в поддержку"
+msgstr ""
+
+#: src/bot/telegram.py:228
+msgid "Выберите настройки"
+msgstr ""
+
+#: src/bot/telegram.py:236
+msgid "Выберите язык/Choose your language"
+msgstr ""
+
+#: src/bot/telegram.py:276
+msgid "Введите ваше сообщение (отправка фото недоступна)"
+msgstr ""
+
+#: src/bot/telegram.py:290
+msgid "Ваше обращение принято"
+msgstr ""
+
+#: src/bot/telegram.py:301
+msgid ""
+"Введите ваш логин СФУ.\n"
+"Пример: NSurname-UG24"
+msgstr ""
+
+#: src/bot/telegram.py:305
+msgid "Вы уже авторизованы. Если хотите перезайти, нажмите 'Перезайти'"
+msgstr ""
+
+#: src/bot/telegram.py:318
+msgid "Ошибка! Некоректный логин, попробуйте снова"
+msgstr ""
+
+#: src/bot/telegram.py:321
+msgid ""
+"Теперь введите название вашей группы\n"
+"Пример: ВГ24-01Б"
+msgstr ""
+
+#: src/bot/telegram.py:333
+msgid ""
+"Ошибка! Некоректная группа, попробуйте снова\n"
+"(Образец: ВГ23-01Б)"
+msgstr ""
+
+#: src/bot/telegram.py:337
+msgid "Введите номер вашей подгруппы (просто число)"
+msgstr ""
+
+#: src/bot/telegram.py:349
+msgid "Ошибка! Подгруппа должна быть числом, попробуйте снова"
+msgstr ""
+
+#: src/bot/telegram.py:355
+msgid "Вы авторизованы!"
+msgstr ""
+
+#: src/bot/app/keyboards.py:49
+msgid "Что сегодня?"
+msgstr ""
+
+#: src/bot/app/keyboards.py:55
+msgid "Что завтра?"
+msgstr ""
+
+#: src/bot/app/keyboards.py:61
+msgid "Расписание"
+msgstr ""
+
+#: src/bot/app/keyboards.py:67
+msgid "Отметиться на физру"
+msgstr ""
+
+#: src/bot/app/keyboards.py:73
+msgid "Настройки/Settings"
+msgstr ""
+
+#: src/bot/app/keyboards.py:91
+msgid "Авторизоваться/Перезайти"
+msgstr ""
+
+#: src/bot/app/keyboards.py:94
+msgid "Написать в поддержку"
+msgstr ""
+
+#: src/bot/app/keyboards.py:97
+msgid "Выбрать язык / Choose language"
+msgstr ""
+
+#: src/bot/app/keyboards.py:100 src/bot/app/keyboards.py:126
+#: src/bot/app/keyboards.py:143 src/bot/app/keyboards.py:154
+msgid "В меню"
+msgstr ""
+
+#: src/bot/app/keyboards.py:120
+msgid "Почистить бд"
+msgstr ""
+
+#: src/bot/app/keyboards.py:123
+msgid "Очистить кэш расписаний"
+msgstr ""
+
+#: src/bot/app/keyboards.py:134
+msgid "Эта неделя"
+msgstr ""
+
+#: src/bot/app/keyboards.py:137
+msgid "Чётная неделя"
+msgstr ""
+
+#: src/bot/app/keyboards.py:140
+msgid "Нечётная неделя"
+msgstr ""
+
+#: src/bot/app/keyboards.py:151
+msgid "Перезайти"
+msgstr ""

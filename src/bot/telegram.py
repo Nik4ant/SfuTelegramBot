@@ -7,6 +7,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.middlewares.i18n import I18nMiddleware
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.builtin import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from emoji import emojize
 
@@ -15,7 +16,9 @@ from sfu_api import timetable, usport
 from sfu_api.timetable import parser as timetable_parser
 from bot import support
 from bot.app import keyboards
-from config import ADMIN_ID, TELEGRAM_TOKEN, I18N_DOMAIN, I18N_LOCALES_DIR
+from bot.app.keyboards import Keyboard
+from bot.app.callbacks import *
+from config import TELEGRAM_TOKEN, I18N_DOMAIN, I18N_LOCALES_DIR
 from validation import *
 
 
@@ -37,32 +40,52 @@ class SupportMessageInput(StatesGroup):
 	user_message = State()
 
 
+# TODO: telegram state, db + default "ru"
+def get_lang_for(user_id: int, fetch_db_if_not_found: bool = True) -> str:
+	"""
+	Returns language based on telegram state or db or default values
+	@param user_id: Telegram id
+	@param fetch_db_if_not_found: If False only searches in telegram state
+	@return: Language code
+	"""
+	# TODO: add telegram state/cache to avoid hitting db every time...
+	lang: str | None = db.get_lang_for(user_id)
+	if lang is None:
+		return "en"
+	return lang
+
+
 @dp.message_handler(commands=["start"])
-async def send_welcome(message: types.Message) -> None:
-	print(repr(message.from_user.locale))
+async def welcome_menu(message: types.Message) -> None:
+	_lang: str = get_lang_for(message.from_user.id)
+
 	if is_admin(message.from_user.id):
 		await message.reply(
-			_("Добро пожаловать, ", locale="en") + message.from_user.first_name + '!',
-			reply_markup=keyboards.admin_menu_board,
+			_("Добро пожаловать", locale=_lang) + ", " + message.from_user.first_name + '!',
+			reply_markup=keyboards.get(Keyboard.ADMIN_PANEL, _lang),
 		)
 	else:
 		await message.reply(
-			_("Добро пожаловать, авторизуйтесь для начала работы."),
-			reply_markup=keyboards.menu_board,
+			_("Добро пожаловать, авторизуйтесь для начала работы", locale=_lang),
+			reply_markup=keyboards.get(Keyboard.MENU, _lang),
 		)
 
 
 # region    -- Utils/Other
+def _is(target: Any) -> Callable:
+	return lambda callback: callback.data == target
+
+
 def update_interaction_time(func: Callable) -> Any:
 	"""
 	Updates last interaction time in db for detected user_id.
-	(Assumes that at least 1 argument is Message or CallbackQuery!)
+	(Assumes that at least 1 argument is Message or types.CallbackQuery!)
 	If no user_id was detected, does nothing.
 	"""
 
 	@functools.wraps(func)
 	def inner(*args, **kwargs):
-		user_id: str | None = None
+		user_id: int | None = None
 		for arg in args:
 			if isinstance(arg, types.Message):
 				user_id = arg.from_user.id
@@ -78,78 +101,100 @@ def update_interaction_time(func: Callable) -> Any:
 
 
 # region    -- ADMIN
-@dp.message_handler(text=("Админ-панель"))
-async def admin_panes(message: types.Message) -> None:
-	if is_admin(message.from_user.id):
-		await message.answer(_("Админ-панель"), reply_markup=keyboards.admin_panel)
+@dp.callback_query_handler(_is(CALLBACK_ADMIN_PANEL))
+async def admin_panel(query: types.CallbackQuery) -> None:
+	if is_admin(query.from_user.id):
+		_lang: str = get_lang_for(query.from_user.id)
+		await query.message.answer(
+			_("Админ-панель", locale=_lang), reply_markup=keyboards.get(Keyboard.ADMIN_PANEL, _lang)
+		)
 
 
-@dp.message_handler(text=("Почистить бд"))
-async def clear_db(message: types.Message) -> None:
-	if is_admin(message.from_user.id):
+@dp.callback_query_handler(_is(CALLBACK_DB_GC))
+async def clear_db(query: types.CallbackQuery) -> None:
+	if is_admin(query.from_user.id):
 		db.remove_old_profiles()
-		await message.answer(_("База данных почищена") + '!')
+		await query.message.answer(_("База данных почищена", locale=get_lang_for(query.from_user.id)) + '!')
 
 
-@dp.message_handler(text=("Очистить кэш расписаний"))
-async def clear_timetable_cache(message: types.Message) -> None:
-	if is_admin(message.from_user.id):
+@dp.callback_query_handler(_is(CALLBACK_CLEAR_TIMETABLE_CACHE))
+async def clear_timetable_cache(query: types.CallbackQuery) -> None:
+	if is_admin(query.from_user.id):
 		timetable.cacher.reset_global_cache()
-
-
-@dp.message_handler(text=("В меню"))
-async def back_to_menu(message: types.Message) -> None:
-	if is_admin(message.from_user.id):
-		await message.answer(_("Меню"), reply_markup=keyboards.admin_menu_board)
-
+		await query.message.answer(_("Кэш изображений удалён", locale=get_lang_for(query.from_user.id)) + '!')
 # endregion -- ADMIN
 
 
+# region    -- COMMON
+@dp.callback_query_handler(_is(CALLBACK_TO_MENU))
+async def back_to_menu(query: types.CallbackQuery) -> None:
+	_lang: str = get_lang_for(query.message.from_user.id)
+
+	if is_admin(query.message.from_user.id):
+		await query.message.reply(
+			_("Меню", locale=_lang), reply_markup=keyboards.get(Keyboard.ADMIN_PANEL, _lang),
+		)
+	else:
+		await query.message.reply(
+			_("Меню", locale=_lang), reply_markup=keyboards.get(Keyboard.MENU, _lang),
+		)
+# endregion -- COMMON
+
+
 # region    -- Usport
-@dp.message_handler(text=emojize("Отметиться на физру :person_cartwheeling:"))
+@dp.callback_query_handler(_is(CALLBACK_PE_QR))
 @update_interaction_time
-async def pe_qr(message: types.Message) -> None:
-	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
+async def pe_qr(query: types.CallbackQuery) -> None:
+	student: db.UserModel | None = db.get_user_if_authenticated(query.message.from_user.id)
 
 	if student is None:
-		await message.answer(_("Ошибка! Вы не авторизовались"))
+		await query.message.answer(
+			_("Ошибка! Вы не авторизовались", locale=get_lang_for(query.from_user.id, False))
+		)
 	else:
 		try:
 			await bot.send_photo(
-				chat_id=message.chat.id, photo=usport.get_pe_qr_url(student.sfu_login)
+				chat_id=query.message.chat.id, photo=usport.get_pe_qr_url(student.sfu_login)
 			)
 		except exceptions.WrongFileIdentifier as err:
-			await message.answer(
-				_("Возникла ошибка. Проверьте входные данные или обратитесь в поддержку.")
+			await query.message.answer(
+				_("Возникла ошибка. Проверьте входные данные или обратитесь в поддержку", locale=student.lang)
 			)
 			logging.exception(
-				"There is an error in receiving the photo. Maybe the user's fault.",
+				"There is an error in receiving the photo. Maybe it's user's fault.",
 				exc_info=err,
 			)
 # endregion -- Usport
 
 
 # region    -- Timetable
-@dp.message_handler(text=emojize("Расписание :teacher:"))
-async def timetable_sequence_start(message: types.Message) -> None:
-	await message.answer(_("Выберите неделю."), reply_markup=keyboards.timetable_board)
+@dp.callback_query_handler(_is(CALLBACK_TIMETABLE_GENERAL))
+async def timetable_sequence_start(query: types.CallbackQuery) -> None:
+	_lang: str = get_lang_for(query.from_user.id)
+	await query.answer()
+	await query.message.answer(
+		_("Выберите неделю", locale=_lang), reply_markup=keyboards.get(Keyboard.TIMETABLE, _lang)
+	)
 
 
-# TODO: student: db.UserModel | None thingy (get_user_if_authenticated) can be handled by a generator?
-@dp.message_handler(text=emojize("Что сегодня? :student:"))
+@dp.callback_query_handler(_is(CALLBACK_TIMETABLE_TODAY))
 @update_interaction_time
-async def timetable_today(message: types.Message) -> None:
-	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
+async def timetable_today(query: types.CallbackQuery) -> None:
+	student: db.UserModel | None = db.get_user_if_authenticated(query.from_user.id)
 	if student is None:
-		await message.answer(_("Ошибка! Вы не авторизовались"))
+		await query.message.answer(
+			_("Ошибка! Вы не авторизовались", locale=get_lang_for(query.from_user.id, False))
+		)
 		return
 
 	img_path: str | None = await timetable_parser.parse_today(student.group_name, student.subgroup)
 	if img_path is None:
-		await message.answer(_("Что-то пошло не так. Попробуйте позже или напишите в поддержку") + ":()")
+		await query.message.answer(
+			_("Что-то пошло не так. Попробуйте позже или напишите в поддержку", locale=student.lang) + ":()"
+		)
 	else:
 		with open(img_path, mode="rb") as img_file:
-			await bot.send_photo(chat_id=message.chat.id, photo=img_file)
+			await bot.send_photo(chat_id=query.message.chat.id, photo=img_file)
 
 
 @update_interaction_time
@@ -167,102 +212,79 @@ async def _timetable_week(message: types.Message, target_week_num: int = timetab
 			await bot.send_photo(chat_id=message.chat.id, photo=img_file)
 
 
-@dp.message_handler(text="Эта неделя")
-async def timetable_this_week(message: types.Message) -> None:
-	await _timetable_week(message)
+@dp.callback_query_handler(_is(CALLBACK_THIS_WEEK))
+async def timetable_this_week(query: types.CallbackQuery) -> None:
+	await _timetable_week(query.message)
 
 
-@dp.message_handler(text="Четная неделя")
-async def timetable_week_even(message: types.Message) -> None:
-	await _timetable_week(message, timetable_parser.WeekNum.EVEN)
+@dp.callback_query_handler(_is(CALLBACK_EVEN_WEEK))
+async def timetable_week_even(query: types.CallbackQuery) -> None:
+	await _timetable_week(query.message, timetable_parser.WeekNum.EVEN)
 
 
-@dp.message_handler(text="Нечетная неделя")
-async def timetable_week_odd(message: types.Message) -> None:
-	await _timetable_week(message, timetable_parser.WeekNum.ODD)
+@dp.callback_query_handler(_is(CALLBACK_ODD_WEEK))
+async def timetable_week_odd(query: types.CallbackQuery) -> None:
+	await _timetable_week(query.message, timetable_parser.WeekNum.ODD)
 # endregion -- Timetable
 
 
 # region    -- Settings
-@dp.message_handler(text=emojize("Настройки/Settings :gear:"))
-async def settings(message: types.Message) -> None:
-	await message.answer("Выберите настройки", reply_markup=keyboards.settings_board)
-
-
-@dp.message_handler(text=emojize("Авторизоваться :rocket:"))
-async def auth(message: types.Message) -> None:
-	if db.get_user_if_authenticated(message.from_user.id) is None:
-		await UserDataInputState.login.set()
-		await message.answer(
-			"Введите ваш логин для входа на usport.\nПример: NSurname-UG24"
-		)
-	else:
-		await message.answer(
-			"Вы уже авторизованы. Если хотите перезайти, нажмите 'Перезайти'.",
-			reply_markup=keyboards.logoff_choice_board,
-		)
-
-
-@dp.message_handler(text=("Выбрать язык / Choose language"))
-async def choose_language(message: types.Message) -> None:
-	await message.answer(
-		"Выберите язык/Choose your language",
-		reply_markup=keyboards.choose_language_board,
+@dp.callback_query_handler(lambda call: call.data == CALLBACK_SETTINGS)
+async def settings(query: types.CallbackQuery) -> None:
+	_lang: str = get_lang_for(query.from_user.id)
+	await query.message.answer(
+		_("Выберите настройки", locale=_lang), reply_markup=keyboards.get(Keyboard.SETTINGS, _lang)
 	)
 
 
-@dp.message_handler(text=("RU"))
-async def ru_lang(message: types.Message) -> None:
-	if is_admin(message.from_user.id):
-		await message.answer(
-			"The language has been changed to Russian",
-			reply_markup=keyboards.admin_menu_board,
-		)
-		i18n.reload()
-	else:
-		await message.answer(
-			"The language has been changed to Russian",
-			reply_markup=keyboards.menu_board,
-		)
-	keyboards.reload(_)
-
-
-@dp.message_handler(text=("EN"))
-async def en_lang(message: types.Message) -> None:
-	if is_admin(message.from_user.id):
-		await message.answer(
-			"The language has been changed to English",
-			reply_markup=keyboards.admin_menu_board,
-		)
-	else:
-		await message.answer(
-			"The language has been changed to English",
-			reply_markup=keyboards.menu_board,
-		)
-
-
-@dp.message_handler(text="Перезайти")
-async def relogin(message: types.Message) -> None:
-	await UserDataInputState.login.set()
-	await message.answer(
-		"Введите ваш логин для входа на usport.\nПример: NSurname-UG24"
+@dp.callback_query_handler(_is(CALLBACK_SELECT_LANG))
+async def choose_language(query: types.CallbackQuery) -> None:
+	_lang: str = get_lang_for(query.from_user.id)
+	await query.message.answer(
+		_("Выберите язык/Choose your language", locale=_lang),
+		reply_markup=keyboards.get(Keyboard.LANGUAGE_SELECT, _lang),
 	)
 
 
-@dp.message_handler(text=emojize("Написать в поддержку :ambulance:"))
-async def support_message(message: types.Message) -> None:
-	await message.answer(
-		"Введите ваше сообщение, если хотите сообщить о баге. Отправка фото недоступна."
+# TODO: actually change language in the database -_-
+@dp.callback_query_handler(_is(CALLBACK_SELECT_RU))
+async def ru_lang(query: types.CallbackQuery) -> None:
+	i18n.reload()
+
+	if is_admin(query.from_user.id):
+		await query.message.answer(
+			"Язык был сменён на русский",
+			reply_markup=keyboards.get(Keyboard.ADMIN_PANEL, "RU"),
+		)
+	else:
+		await query.message.answer(
+			"Язык был сменён на русский",
+			reply_markup=keyboards.get(Keyboard.MENU, "RU"),
+		)
+
+
+@dp.callback_query_handler(_is(CALLBACK_SELECT_EN))
+async def en_lang(query: types.CallbackQuery) -> None:
+	i18n.reload()
+
+	if is_admin(query.from_user.id):
+		await query.message.answer(
+			"Language has been changed to English",
+			reply_markup=keyboards.get(Keyboard.ADMIN_PANEL, "EN"),
+		)
+	else:
+		await query.message.answer(
+			"Language has been changed to English",
+			reply_markup=keyboards.get(Keyboard.MENU, "EN"),
+		)
+
+
+@dp.callback_query_handler(_is(CALLBACK_SUPPORT))
+async def support_message(query: types.CallbackQuery) -> None:
+	await query.message.answer(
+		_("Введите ваше сообщение (отправка фото недоступна)", locale=get_lang_for(query.from_user.id))
 	)
 	await SupportMessageInput.user_message.set()
-
-
-@dp.message_handler(text="Назад")
-async def go_back(message: types.Message) -> None:
-	if is_admin(message.from_user.id):
-		await message.answer("Вы в меню.", reply_markup=keyboards.admin_menu_board)
-	else:
-		await message.answer("Вы в меню.", reply_markup=keyboards.menu_board)
 # endregion    -- Settings
 
 
@@ -270,7 +292,7 @@ async def go_back(message: types.Message) -> None:
 async def user_support_message(message: types.Message, state: FSMContext) -> None:
 	async with state.proxy() as data:
 		if message.text:
-			data["user_message"] = format_message(message.from_user.id, message.text)
+			data["user_message"] = format_support_message(message.from_user.id, message.text)
 			await support.send_message(data["user_message"])
 
 	await state.finish()
@@ -278,29 +300,50 @@ async def user_support_message(message: types.Message, state: FSMContext) -> Non
 
 
 # region    -- Input profile data
+@dp.callback_query_handler(_is(CALLBACK_AUTH))
+async def auth(query: types.CallbackQuery) -> None:
+	_lang: str = get_lang_for(query.from_user.id)
+
+	if db.get_user_if_authenticated(query.from_user.id) is None:
+		await UserDataInputState.login.set()
+		await query.message.answer(
+			_("Введите ваш логин СФУ.\nПример: NSurname-UG24", locale=_lang)
+		)
+	else:
+		await query.message.answer(
+			_("Вы уже авторизованы. Если хотите перезайти, нажмите 'Перезайти'", locale=_lang),
+			reply_markup=keyboards.get(Keyboard.LOGOFF, _lang),
+		)
+
+
 @dp.message_handler(state=UserDataInputState.login)
 async def add_login(message: types.Message, state: FSMContext) -> None:
 	async with state.proxy() as data:
+		_lang: str = get_lang_for(message.from_user.id)
+		data["lang"] = _lang
 		data["login"] = format_sfu_login(message.text)
+
 		if not data["login"]:
-			await message.answer(_("Ошибка! Некоректный логин, попробуйте снова"))
+			await message.answer(_("Ошибка! Некоректный логин, попробуйте снова", locale=_lang))
 			return
 
-		await message.answer(_("Теперь введите название вашей группы\nПример: ВГ24-01Б"))
+		await message.answer(_("Теперь введите название вашей группы\nПример: ВГ24-01Б", locale=_lang))
 		await UserDataInputState.next()
 
 
 @dp.message_handler(state=UserDataInputState.group)
 async def add_group(message: types.Message, state: FSMContext) -> None:
 	async with state.proxy() as data:
+		_lang: str = data["lang"]
 		data["group"] = sanitize_str(message.text)
+
 		if not data["group"]:
 			await message.answer(
-				_("Ошибка! Некоректная группа, попробуйте снова\n(Образец: ВГ23-01Б)")
+				_("Ошибка! Некоректная группа, попробуйте снова\n(Образец: ВГ23-01Б)", locale=_lang)
 			)
 			return
 
-		await message.answer(_("Введите номер вашей подгруппы (просто число)."))
+		await message.answer(_("Введите номер вашей подгруппы (просто число)", locale=_lang))
 		await UserDataInputState.next()
 
 
@@ -308,21 +351,25 @@ async def add_group(message: types.Message, state: FSMContext) -> None:
 async def add_subgroup(message: types.Message, state: FSMContext) -> None:
 	async with state.proxy() as data:
 		data["subgroup"] = sanitize_str(message.text)
+		_lang: str = data["lang"]
+
 		if not data["subgroup"].isnumeric():
 			await message.answer(
-				_("Ошибка! Подгруппа должна быть числом, попробуйте снова")
+				_("Ошибка! Подгруппа должна быть числом, попробуйте снова", locale=_lang)
 			)
 			return
 
-		db.create_or_replace_user(message.from_user.id, data["login"], data["group"], data["subgroup"])
-		await message.answer(_("Вы авторизованы!"), reply_markup=keyboards.menu_board)
+		db.create_or_replace_user(message.from_user.id, data["login"], data["group"], data["subgroup"], _lang)
+		await message.answer(
+			_("Вы авторизованы!", locale=_lang), reply_markup=keyboards.get(Keyboard.MENU, _lang)
+		)
 		await state.finish()
 # endregion -- Input profile data
 
 
 def start() -> None:
+	keyboards.init(_)
 	executor.start_polling(dp)
-	keyboards.reload(_)
 
 
 async def close() -> None:

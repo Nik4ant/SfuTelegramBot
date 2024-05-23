@@ -1,0 +1,179 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-23 17:33+0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/bot/telegram.py:60
+msgid "Добро пожаловать"
+msgstr "Welcome"
+
+#: src/bot/telegram.py:65
+msgid "Добро пожаловать, авторизуйтесь для начала работы"
+msgstr "Welcome, sign in to get started"
+
+#: src/bot/telegram.py:101
+msgid "Админ-панель"
+msgstr "Admin panel"
+
+#: src/bot/telegram.py:109
+msgid "База данных почищена"
+msgstr "Old database entries were removed"
+
+#: src/bot/telegram.py:116
+msgid "Кэш изображений удалён"
+msgstr "Timatable images were deleted"
+
+#: src/bot/telegram.py:127 src/bot/telegram.py:131
+msgid "Меню"
+msgstr "Menu"
+
+#: src/bot/telegram.py:144 src/bot/telegram.py:177 src/bot/telegram.py:195
+msgid "Ошибка! Вы не авторизовались"
+msgstr "Error! You're not logged in"
+
+#: src/bot/telegram.py:153
+msgid "Возникла ошибка. Проверьте входные данные или обратитесь в поддержку"
+msgstr "Error occurred. Check your login details or contact the support"
+
+#: src/bot/telegram.py:167
+msgid "Выберите неделю"
+msgstr "Select week"
+
+#: src/bot/telegram.py:184 src/bot/telegram.py:200
+msgid "Что-то пошло не так. Попробуйте позже или напишите в поддержку"
+msgstr "Something went wrong. Try later or contact the support"
+
+#: src/bot/telegram.py:227
+msgid "Выберите настройки"
+msgstr "Select setting"
+
+#: src/bot/telegram.py:236
+msgid "Выберите язык/Choose your language"
+msgstr "Choose your language"
+
+#: src/bot/telegram.py:276
+msgid "Введите ваше сообщение (отправка фото недоступна)"
+msgstr "Enter your message (attachments are ignored)"
+
+#: src/bot/telegram.py:289
+msgid "Ваше обращение принято"
+msgstr "Your message was sent"
+
+#: src/bot/telegram.py:300
+msgid ""
+"Введите ваш логин СФУ.\n"
+"Пример: NSurname-UG24"
+msgstr ""
+"Enter you SFU login.\n"
+"For example: NSurname-UG24"
+
+#: src/bot/telegram.py:304
+msgid "Вы уже авторизованы. Если хотите перезайти, нажмите 'Перезайти'"
+msgstr "You're logged in already. If you want to re-login, press 're-login'"
+
+#: src/bot/telegram.py:317
+msgid "Ошибка! Некоректный логин, попробуйте снова"
+msgstr "Error! Invalid login, try again"
+
+#: src/bot/telegram.py:320
+msgid ""
+"Теперь введите название вашей группы\n"
+"Пример: ВГ24-01Б"
+msgstr ""
+"Enter your group name\n"
+"For example: ВГ24-01Б"
+
+#: src/bot/telegram.py:332
+msgid ""
+"Ошибка! Некоректная группа, попробуйте снова\n"
+"(Образец: ВГ23-01Б)"
+msgstr ""
+"Error! Invalid group name, try again\n"
+"(Example: ВГ23-01Б)"
+
+#: src/bot/telegram.py:336
+msgid "Введите номер вашей подгруппы (просто число)"
+msgstr "Enter your subgroup number (single number only!)"
+
+#: src/bot/telegram.py:348
+msgid "Ошибка! Подгруппа должна быть числом, попробуйте снова"
+msgstr "Error! Subgroup must be a number, try again"
+
+#: src/bot/telegram.py:354
+msgid "Вы авторизованы!"
+msgstr "You're now logged in!"
+
+#: src/bot/app/keyboards.py:49
+msgid "Что сегодня?"
+msgstr "Lessons today"
+
+#: src/bot/app/keyboards.py:55
+msgid "Что завтра?"
+msgstr "Lessons tomorrow"
+
+#: src/bot/app/keyboards.py:61
+msgid "Расписание"
+msgstr "Timetable"
+
+#: src/bot/app/keyboards.py:67
+msgid "Отметиться на физру"
+msgstr "Get PE qr-code"
+
+#: src/bot/app/keyboards.py:73
+msgid "Настройки/Settings"
+msgstr "Settings"
+
+#: src/bot/app/keyboards.py:91
+msgid "Авторизоваться/Перезайти"
+msgstr "Sign-in/Re-login"
+
+#: src/bot/app/keyboards.py:94
+msgid "Написать в поддержку"
+msgstr "Contact support"
+
+#: src/bot/app/keyboards.py:97
+msgid "Выбрать язык / Choose language"
+msgstr "Choose language"
+
+#: src/bot/app/keyboards.py:100 src/bot/app/keyboards.py:126
+#: src/bot/app/keyboards.py:143 src/bot/app/keyboards.py:154
+msgid "В меню"
+msgstr "Main menu"
+
+#: src/bot/app/keyboards.py:120
+msgid "Почистить бд"
+msgstr "Clear DB"
+
+#: src/bot/app/keyboards.py:123
+msgid "Очистить кэш расписаний"
+msgstr "Clear timetable cache"
+
+#: src/bot/app/keyboards.py:134
+msgid "Эта неделя"
+msgstr "This week"
+
+#: src/bot/app/keyboards.py:137
+msgid "Чётная неделя"
+msgstr "Even week"
+
+#: src/bot/app/keyboards.py:140
+msgid "Нечётная неделя"
+msgstr "Odd week"
+
+#: src/bot/app/keyboards.py:151
+msgid "Перезайти"
+msgstr "Re-login"
