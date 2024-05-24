@@ -164,7 +164,7 @@ async def back_to_menu(message: types.Message) -> None:
 
 	if is_admin(message.from_user.id):
 		await message.reply(
-			_("Меню", locale=_lang), reply_markup=keyboards.get(Keyboard.ADMIN_PANEL, _lang),
+			_("Меню", locale=_lang), reply_markup=keyboards.get(Keyboard.ADMIN_MENU, _lang),
 		)
 	else:
 		await message.reply(
@@ -277,15 +277,15 @@ async def choose_language(message: types.Message) -> None:
 	)
 
 
-# TODO: actually change language in the database -_-
 @dp_callbacks_to_texts(CALLBACK_SELECT_RU)
 async def ru_lang(message: types.Message) -> None:
 	i18n.reload()
+	db.set_lang_for(message.from_user.id, "ru")
 
 	if is_admin(message.from_user.id):
 		await message.answer(
 			"Язык был сменён на русский",
-			reply_markup=keyboards.get(Keyboard.ADMIN_PANEL, "RU"),
+			reply_markup=keyboards.get(Keyboard.ADMIN_MENU, "RU"),
 		)
 	else:
 		await message.answer(
@@ -297,11 +297,12 @@ async def ru_lang(message: types.Message) -> None:
 @dp_callbacks_to_texts(CALLBACK_SELECT_EN)
 async def en_lang(message: types.Message) -> None:
 	i18n.reload()
+	db.set_lang_for(message.from_user.id, "en")
 
 	if is_admin(message.from_user.id):
 		await message.answer(
 			"Language has been changed to English",
-			reply_markup=keyboards.get(Keyboard.ADMIN_PANEL, "EN"),
+			reply_markup=keyboards.get(Keyboard.ADMIN_MENU, "EN"),
 		)
 	else:
 		await message.answer(

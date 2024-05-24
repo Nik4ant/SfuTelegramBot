@@ -18,7 +18,7 @@ class UserModel:
 	sfu_login: str = ""
 	group_name: str = ""
 	subgroup: str = ""
-	lang: str = "RU"
+	lang: str = ""
 	last_time_interaction: datetime = datetime.now()
 
 	@classmethod
@@ -110,6 +110,15 @@ def get_lang_for(telegram_id: int) -> str | None:
 		return None
 
 
+def set_lang_for(telegram_id: int, lang: str) -> None:
+	try:
+		cur.execute("UPDATE profiles SET lang = ? WHERE telegram_id == ?", (lang, telegram_id,))
+		db.commit()
+	except sql.Error as err:
+		logging.exception(f"SQL error: {err.sqlite_errorname}", exc_info=err)
+		return None
+
+
 # region    -- Search/Delete
 def get_user_if_authenticated(telegram_id: int) -> UserModel | None:
 	"""@return: User only if ALL fields are present; None - otherwise"""
@@ -117,7 +126,7 @@ def get_user_if_authenticated(telegram_id: int) -> UserModel | None:
 	try:
 		cur.execute("SELECT * FROM profiles WHERE telegram_id == ?", (telegram_id,))
 		data: tuple[Any] | None = cur.fetchone()
-		
+
 		if data is None:
 			return None
 		

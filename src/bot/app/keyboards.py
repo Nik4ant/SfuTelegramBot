@@ -51,7 +51,7 @@ def get_dp_text_variants(callback: Any) -> list[str]:
 
 
 def get(keyboard_type: Keyboard, lang: str) -> ReplyKeyboardMarkup | None:
-    return _KEYBOARDS.get(keyboard_type, {}).get(lang, None)
+    return _KEYBOARDS.get(keyboard_type, {}).get(lang.lower(), None)
 
 
 def is_ready() -> bool:
