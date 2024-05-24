@@ -15,7 +15,8 @@ async def send_welcome(message: types.Message) -> None:
 
 
 async def send_message(message) -> None:
-    await bot.send_message(str(ADMIN_IDS), message)
+    for admin_id in ADMIN_IDS:
+        await bot.send_message(admin_id, message)
 
 
 def start() -> None:
