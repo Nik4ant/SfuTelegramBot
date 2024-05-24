@@ -40,9 +40,9 @@ def main() -> None:
     finally:
         asyncio.run(timetable.parser.close_http_session())
         if args.support_enabled:
-            asyncio.run(telegram.close())
-        else:
             asyncio.run(support.close())
+        else:
+            asyncio.run(telegram.close())
         logging.info("Successfully shutdown the bot")
 
 

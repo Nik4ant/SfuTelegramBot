@@ -100,7 +100,11 @@ def get_lang_for(telegram_id: int) -> str | None:
 	"""@return: Preferred language (if set); None - otherwise"""
 	try:
 		cur.execute("SELECT lang FROM profiles WHERE telegram_id == ?", (telegram_id,))
-		return cur.fetchone()
+		data: tuple | None = cur.fetchone()
+
+		if data is None:
+			return None
+		return data[0]
 	except sql.Error as err:
 		logging.exception(f"SQL error: {err.sqlite_errorname}", exc_info=err)
 		return None
