@@ -68,34 +68,31 @@ def init(_: Callable) -> None:
         _btn_today = __map_callback_to_text(
             text=_("Что сегодня?", locale=lang) + emojize(" :student:"), callback_data=CALLBACK_TIMETABLE_TODAY
         )
-        admin_menu_keyboard.add(_btn_today)
-        menu_keyboard.add(_btn_today)
-
         _btn_tomorrow = __map_callback_to_text(
             text=_("Что завтра?", locale=lang) + emojize(" :student:"), callback_data=CALLBACK_TIMETABLE_TOMORROW
         )
-        menu_keyboard.add(_btn_tomorrow)
-        admin_menu_keyboard.add(_btn_tomorrow)
+
+        admin_menu_keyboard.row(_btn_today, _btn_tomorrow)
+        menu_keyboard.row(_btn_today, _btn_tomorrow)
 
         _btn_timetable = __map_callback_to_text(
             text=_("Расписание", locale=lang) + emojize(" :teacher:"), callback_data=CALLBACK_TIMETABLE_GENERAL
         )
-        menu_keyboard.add(_btn_timetable)
-        admin_menu_keyboard.add(_btn_timetable)
+        menu_keyboard.row(_btn_timetable)
+        admin_menu_keyboard.row(_btn_timetable)
 
         _btn_pe_qr = __map_callback_to_text(
             text=_("Отметиться на физру", locale=lang) + emojize(" :person_cartwheeling:"), callback_data=CALLBACK_PE_QR
         )
-        menu_keyboard.add(_btn_pe_qr)
-        admin_menu_keyboard.add(_btn_pe_qr)
+        menu_keyboard.row(_btn_pe_qr)
+        admin_menu_keyboard.row(_btn_pe_qr)
 
         _btn_settings = __map_callback_to_text(
             text=_("Настройки/Settings", locale=lang) + emojize(" :gear:"), callback_data=CALLBACK_SETTINGS
         )
-        menu_keyboard.add(_btn_settings)
-        admin_menu_keyboard.add(_btn_settings)
-
-        admin_menu_keyboard.add(
+        menu_keyboard.row(_btn_settings)
+        admin_menu_keyboard.row(
+            _btn_settings,
             __map_callback_to_text(
                 text=_("Админ-панель", locale=lang), callback_data=CALLBACK_ADMIN_PANEL
             )
@@ -107,15 +104,17 @@ def init(_: Callable) -> None:
 
         # region Keyboard.SETTINGS
         settings_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-        settings_keyboard.add(__map_callback_to_text(
+        settings_keyboard.row(__map_callback_to_text(
             text=_("Авторизоваться/Перезайти", locale=lang) + emojize(" :rocket:"), callback_data=CALLBACK_AUTH
         ))
-        settings_keyboard.add(__map_callback_to_text(
-            text=_("Написать в поддержку", locale=lang) + emojize(" :ambulance:"), callback_data=CALLBACK_SUPPORT
-        ))
-        settings_keyboard.add(__map_callback_to_text(
-            text=_("Выбрать язык / Choose language", locale=lang), callback_data=CALLBACK_SELECT_LANG
-        ))
+        settings_keyboard.row(
+            __map_callback_to_text(
+                text=_("Написать в поддержку", locale=lang) + emojize(" :ambulance:"), callback_data=CALLBACK_SUPPORT
+            ),
+            __map_callback_to_text(
+                text=_("Выбрать язык / Choose language", locale=lang), callback_data=CALLBACK_SELECT_LANG
+            )
+        )
         settings_keyboard.row(__map_callback_to_text(
             text=_("В меню", locale=lang), callback_data=CALLBACK_TO_MENU
         ))
@@ -153,13 +152,15 @@ def init(_: Callable) -> None:
         timetable_keyboard.row(__map_callback_to_text(
             text=_("Эта неделя", locale=lang), callback_data=CALLBACK_THIS_WEEK
         ))
-        timetable_keyboard.add(__map_callback_to_text(
-            text=_("Чётная неделя", locale=lang), callback_data=CALLBACK_EVEN_WEEK
-        ))
-        timetable_keyboard.add(__map_callback_to_text(
-            text=_("Нечётная неделя", locale=lang), callback_data=CALLBACK_ODD_WEEK
-        ))
-        admin_panel_keyboard.row(__map_callback_to_text(
+        timetable_keyboard.row(
+            __map_callback_to_text(
+                text=_("Чётная неделя", locale=lang), callback_data=CALLBACK_EVEN_WEEK
+            ),
+            __map_callback_to_text(
+                text=_("Нечётная неделя", locale=lang), callback_data=CALLBACK_ODD_WEEK
+            )
+        )
+        timetable_keyboard.row(__map_callback_to_text(
             text=_("В меню", locale=lang), callback_data=CALLBACK_TO_MENU
         ))
         _KEYBOARDS[Keyboard.TIMETABLE][lang] = timetable_keyboard
