@@ -169,7 +169,7 @@ def init(_: Callable) -> None:
         # region Keyboard.LOGOFF
         logoff_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
         logoff_keyboard.row(__map_callback_to_text(
-            text=_("Перезайти", locale=lang), callback_data=CALLBACK_AUTH
+            text=_("Перезайти", locale=lang), callback_data=CALLBACK_RE_LOGIN
         ))
         logoff_keyboard.row(__map_callback_to_text(
             text=_("В меню", locale=lang), callback_data=CALLBACK_TO_MENU

@@ -7,6 +7,7 @@ CALLBACK_SETTINGS: str = "btn_settings"
 CALLBACK_ADMIN_PANEL: str = "btn_admin_panel"
 
 CALLBACK_AUTH: str = "btn_auth"
+CALLBACK_RE_LOGIN: str = "btn_re_login"
 CALLBACK_SUPPORT: str = "btn_support"
 CALLBACK_SELECT_LANG: str = "btn_select_lang"
 CALLBACK_TO_MENU: str = "btn_go_to_menu"

@@ -1,5 +1,6 @@
 import logging
 import functools
+from datetime import datetime, timedelta
 from typing import Callable, Any
 
 import aiogram.utils.exceptions as exceptions
@@ -18,7 +19,7 @@ from bot import support
 from bot.app import keyboards
 from bot.app.keyboards import Keyboard
 from bot.app.callbacks import *
-from config import TELEGRAM_TOKEN, I18N_DOMAIN, I18N_LOCALES_DIR, SUPPORTED_LANGUAGES
+from config import TELEGRAM_TOKEN, I18N_DOMAIN, I18N_LOCALES_DIR, SUPPORTED_LANGUAGES, SFU_UNI_TIMEZONE
 from validation import *
 
 
@@ -59,7 +60,7 @@ async def welcome_menu(message: types.Message) -> None:
 		)
 	else:
 		await message.reply(
-			_("Добро пожаловать, авторизуйтесь для начала работы", locale=_lang),
+			_("Добро пожаловать", locale=_lang) + ", " + message.from_user.first_name + '!',
 			reply_markup=keyboards.get(Keyboard.MENU, _lang),
 		)
 
@@ -93,7 +94,6 @@ def dp_callbacks_to_texts(callback_data: Any):
 	return decorator
 
 
-# TODO: telegram state, db + default "ru"
 def get_lang_for(user_id: int, fetch_db_if_not_found: bool = True) -> str:
 	"""
 	Returns language based on telegram state or db or default values
@@ -211,6 +211,16 @@ async def timetable_sequence_start(message: types.Message) -> None:
 @dp_callbacks_to_texts(CALLBACK_TIMETABLE_TODAY)
 @update_interaction_time
 async def timetable_today(message: types.Message) -> None:
+	await _timetable_day_at(message, datetime.now(SFU_UNI_TIMEZONE))
+
+
+@dp_callbacks_to_texts(CALLBACK_TIMETABLE_TOMORROW)
+@update_interaction_time
+async def timetable_tomorrow(message: types.Message) -> None:
+	await _timetable_day_at(message, datetime.now(SFU_UNI_TIMEZONE) + timedelta(days=1))
+
+
+async def _timetable_day_at(message: types.Message, at: datetime) -> None:
 	student: db.UserModel | None = db.get_user_if_authenticated(message.from_user.id)
 	if student is None:
 		await message.answer(
@@ -218,7 +228,7 @@ async def timetable_today(message: types.Message) -> None:
 		)
 		return
 
-	img_path: str | None = await timetable_parser.parse_today(student.group_name, student.subgroup)
+	img_path: str | None = await timetable_parser.parse_at(student.group_name, student.subgroup, at)
 	if img_path is None:
 		await message.answer(
 			_("Что-то пошло не так. Попробуйте позже или напишите в поддержку", locale=student.lang) + ":()"
@@ -346,6 +356,17 @@ async def auth(message: types.Message) -> None:
 			_("Вы уже авторизованы. Если хотите перезайти, нажмите 'Перезайти'", locale=_lang),
 			reply_markup=keyboards.get(Keyboard.LOGOFF, _lang),
 		)
+
+
+@dp_callbacks_to_texts(CALLBACK_RE_LOGIN)
+async def re_login(message: types.Message) -> None:
+	_lang: str = get_lang_for(message.from_user.id)
+
+	await UserDataInputState.login.set()
+	await message.answer(
+		_("Введите ваш логин СФУ.\nПример: NSurname-UG24", locale=_lang),
+		reply_markup=types.ReplyKeyboardRemove()
+	)
 
 
 @dp.message_handler(state=UserDataInputState.login)

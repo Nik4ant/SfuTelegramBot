@@ -1,4 +1,6 @@
+import datetime
 import logging
+from typing import Optional
 
 import aiohttp
 from urllib import parse
@@ -18,16 +20,15 @@ URL_VARIANTS: list[str] = [
 aiohttp_session = aiohttp.ClientSession()
 
 
-async def parse_today(group_name: str, subgroup_name: str) -> str | None:
+async def parse_at(group_name: str, subgroup_name: str, date: Optional[datetime]) -> str | None:
 	"""
 	@return: Path to image file with timetable for today; None - if something went wrong
 	"""
 	lessons: list[Lesson] = []
 
 	# Even/Odd week + day num
-	_date_now = datetime.now(SFU_UNI_TIMEZONE)
-	today_day_num: int = _date_now.weekday() + 1
-	target_week_num: str = str(_get_week_num(_date_now))
+	today_day_num: int = date.weekday() + 1
+	target_week_num: str = str(_get_week_num(date))
 
 	result: Day = Day(today_day_num - 1, int(target_week_num), group_name, subgroup_name, [])
 
