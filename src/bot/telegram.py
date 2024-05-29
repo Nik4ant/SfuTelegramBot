@@ -214,10 +214,10 @@ async def timetable_today(message: types.Message) -> None:
 	await _timetable_day_at(message, datetime.now(SFU_UNI_TIMEZONE))
 
 
-@dp_callbacks_to_texts(CALLBACK_TIMETABLE_TOMORROW)
-@update_interaction_time
-async def timetable_tomorrow(message: types.Message) -> None:
-	await _timetable_day_at(message, datetime.now(SFU_UNI_TIMEZONE) + timedelta(days=1))
+# @dp_callbacks_to_texts(CALLBACK_TIMETABLE_TOMORROW)
+# @update_interaction_time
+# async def timetable_tomorrow(message: types.Message) -> None:
+# 	await _timetable_day_at(message, datetime.now(SFU_UNI_TIMEZONE) + timedelta(days=1))
 
 
 async def _timetable_day_at(message: types.Message, at: datetime) -> None:

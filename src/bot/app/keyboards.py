@@ -68,12 +68,12 @@ def init(_: Callable) -> None:
         _btn_today = __map_callback_to_text(
             text=_("Что сегодня?", locale=lang) + emojize(" :student:"), callback_data=CALLBACK_TIMETABLE_TODAY
         )
-        _btn_tomorrow = __map_callback_to_text(
-            text=_("Что завтра?", locale=lang) + emojize(" :student:"), callback_data=CALLBACK_TIMETABLE_TOMORROW
-        )
+        #_btn_tomorrow = __map_callback_to_text(
+        #    text=_("Что завтра?", locale=lang) + emojize(" :student:"), callback_data=CALLBACK_TIMETABLE_TOMORROW
+        #)
 
-        admin_menu_keyboard.row(_btn_today, _btn_tomorrow)
-        menu_keyboard.row(_btn_today, _btn_tomorrow)
+        admin_menu_keyboard.row(_btn_today)#, _btn_tomorrow)
+        menu_keyboard.row(_btn_today)#, _btn_tomorrow)
 
         _btn_timetable = __map_callback_to_text(
             text=_("Расписание", locale=lang) + emojize(" :teacher:"), callback_data=CALLBACK_TIMETABLE_GENERAL
