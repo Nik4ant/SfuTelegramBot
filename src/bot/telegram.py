@@ -421,7 +421,7 @@ async def add_subgroup(message: types.Message, state: FSMContext) -> None:
 def start() -> None:
 	# See dp_callbacks_to_texts for explanation
 	# keyboards.init(_)
-	executor.start_polling(dp)
+	executor.start_polling(dp, skip_updates=True)
 
 
 async def close() -> None:
